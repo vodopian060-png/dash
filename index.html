@@ -362,7 +362,7 @@ $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b
 $('#f-period').addEventListener('change',e=>{st.period=e.target.value;st.tf.page=1;render()});
 async function enter(pw,keep){KEY=await deriveKey(pw);try{await loadAll()}catch(e){KEY=null;$('#pw-err').classList.remove('hidden');return false}if(keep){try{localStorage.setItem('nl-pw',pw)}catch(e){}}$('#gate').classList.add('hidden');render();return true}
 $('#pw-go').onclick=()=>enter($('#pw').value,$('#pw-keep').checked);$('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')enter($('#pw').value,$('#pw-keep').checked)});
-(async()=>{let saved='';try{saved=localStorage.getItem('nl-pw')||''}catch(e){}if(saved){const ok=await enter(saved,false);if(!ok){try{localStorage.removeItem('nl-pw')}catch(e){}}}main.innerHTML='<div class="empty">Введите пароль.</div>'})();
+(async()=>{let saved='';try{saved=localStorage.getItem('nl-pw')||''}catch(e){}if(saved){const ok=await enter(saved,false);if(ok)return;try{localStorage.removeItem('nl-pw')}catch(e){}}main.innerHTML='<div class="empty">Введите пароль.</div>'})();
 })();
 </script>
 </body></html>
