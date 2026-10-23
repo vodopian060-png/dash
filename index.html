@@ -191,7 +191,7 @@ tr.link{cursor:pointer}tr.link:hover td{background:var(--chip)}
     if (/казначейств|уфк|фнс/.test(kk) || inn === '7727406020' || /единый налоговый|енп|ст\. 79 нк/.test(nn)) return 'Налоги/взносы';
     if (/депозит/.test(nn) && !/aviasales/.test(nn)) return 'Депозит';
     const isBank = inn === '7707083893' || inn === '7728168971' || /сбербанк|альфа-банк/.test(kk) && !/ип /.test(kk);
-    if (isBank) { if (/заработн|зарплат|реестр/.test(nn)) return 'Зарплата'; if (/кредит|займ/.test(nn)) return 'Займы/кредиты'; if (/нал/.test(nn)) return 'Наличные'; return 'Банк. комиссии'; }
+    if (isBank) { if (/заработн|зарплат|реестр/.test(nn)) return 'Зарплата'; if (/кредит|займ|погашение задолженности по договору|погашение основного долга/.test(nn)) return 'Займы/кредиты'; if (/нал/.test(nn)) return 'Наличные'; return 'Банк. комиссии'; }
     if (/заработн|зарплат/.test(nn)) return 'Зарплата';
     if (/лизинг/.test(nn) || /европлан|каркаде/.test(kk)) return 'Лизинг';
     if (/дивиденд/.test(nn)) return 'Дивиденды';
@@ -379,7 +379,7 @@ function agg2b(rows,key){const m=new Map();for(const r of rows){let g=m.get(r[ke
 function afterCheck(){['t-cw','t-cl','t-ck'].forEach(id=>bindTable(id,[]));const ex=document.getElementById('exp-check');if(ex)ex.onclick=()=>{const t=document.getElementById('t-ck');download(`проверка ${periodLabel()}.csv`,'\ufeff'+[...t.querySelectorAll('tr')].map(tr=>[...tr.cells].map(c=>'"'+c.textContent.replace(/"/g,'""')+'"').join(';')).join('\n'))}}
 function vLoad(){const m=st.meta||{};const row=(t,o)=>o?`<div class="kv"><b>${t}</b><span>${o.note||''} · загружено ${o.at?new Date(o.at).toLocaleString('ru-RU'):'—'}${o.by?' · '+esc(o.by):''}</span></div>`:`<div class="kv"><b>${t}</b><span class="summary">не загружено</span></div>`;
   const can=true;
-  return `<div class="card"><h3>Загрузка таблиц</h3><p class="note">Выбери один или несколько файлов: «График перевозок 2026.xlsx», таблицу сверок, выписки Сбер и Альфа (Excel из интернет-банка). Страница сама определит, что это, разберёт и сохранит для всех, кто открывает её. Старая версия того же файла заменяется.</p>
+  return `<div class="card"><h3>Загрузка таблиц</h3><p class="note">Выбери один или несколько файлов: «График перевозок 2026.xlsx», таблицу сверок, выписки Сбер и Альфа (Excel из интернет-банка). Страница сама определит, что это, разберёт и сохранит для всех, кто открывает её. График и сверки заменяются целиком; выписки сливаются — можно грузить только новый период, старые дни останутся.</p>
   <input type="file" id="files" accept=".xlsx,.xlsm,.xls" multiple><div class="filters"><input id="gh-name" placeholder="Кто загружает (имя)" value=""><button class="btn" id="go">Загрузить</button></div>
   <details><summary class="summary">Токен GitHub для записи (один раз на устройство)</summary><p class="note">Нужен токен с правом записи в репозиторий ${esc('vodopian060-png/dash')}: GitHub → Settings → Developer settings → Fine-grained tokens → Generate: Repository access = только этот репозиторий, Permissions → Contents: Read and write. Вставь сюда — он хранится только в этом браузере.</p><div class="filters"><input id="gh-token" type="password" placeholder="github_pat_…"><button class="btn sec" id="gh-save">Сохранить токен</button></div><div id="gh-status" class="summary"></div></details>
   <div id="load-log"></div></div>
@@ -406,7 +406,9 @@ async function afterLoad(){const lo=document.getElementById('logout');if(lo)lo.o
     try{const buf=await f.arrayBuffer();const wb=XLSX.read(buf,{cellDates:true});const kind=NLParse.detect(wb);let payload,note,key,file;
       if(kind==='grafik'){const g=NLParse.parseGrafik(wb,XLSX);if(!g.rows.length)throw new Error('не нашёл месячных листов');payload=NLParse.pack(g);const ds=g.rows.map(x=>x.d).filter(Boolean).sort();note=`${N(g.rows.length)} рейсов, ${ds[0]} – ${ds[ds.length-1]}`;key='grafik';file='grafik';st.g=g.rows}
       else if(kind==='sverki'){const sv=NLParse.parseSverki(wb,XLSX);if(!sv.cust.length&&!sv.carr.length)throw new Error('не нашёл листов «СЧЕТА НЛ 2026» / «2026»');payload=sv;note=`${N(sv.cust.length)} строк по заказчикам, ${N(sv.carr.length)} по перевозчикам`;key='sverki';file='sverki';st.s=sv}
-      else{const b=NLParse.parseBank(wb,XLSX);if(!b.ops.length)throw new Error('не похоже на выписку Сбера или Альфы');payload=b;const ds=b.ops.map(x=>x.d).sort();note=`${b.bank} ${b.acct.slice(-4)}: ${N(b.ops.length)} операций, ${ds[0]} – ${ds[ds.length-1]}`;key='bank';file='bank-'+b.acct.slice(-4)}
+      else{const b=NLParse.parseBank(wb,XLSX);if(!b.ops.length)throw new Error('не похоже на выписку Сбера или Альфы');file='bank-'+b.acct.slice(-4);const nds=b.ops.map(x=>x.d).sort();const nf=nds[0],nt=nds[nds.length-1];
+        let merged=b.ops,kept=0;try{const prev=await fetchEnc(file);const keep=(prev.ops||[]).filter(o=>o.d<nf||o.d>nt);kept=keep.length;merged=keep.concat(b.ops)}catch(e){}
+        payload={bank:b.bank,acct:b.acct,ops:merged};const ds=merged.map(x=>x.d).sort();note=`${b.bank} ${b.acct.slice(-4)}: +${N(b.ops.length)} операций за ${nf} – ${nt}${kept?', всего '+N(merged.length)+' за '+ds[0]+' – '+ds[ds.length-1]:''}`;key='bank'}
       el.textContent=`${f.name}: ${note} — шифрую и отправляю в GitHub…`;
       const ct=await encryptJson(payload);await ghPut(`data/${file}.enc`,ct,`data: ${file} (${note})`);
       const rec={file,at:new Date().toISOString(),by,note,name:f.name};
