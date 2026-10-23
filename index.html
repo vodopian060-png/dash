@@ -1,0 +1,366 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#1e2a38"><link rel="icon" href="icon.svg"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Неруд-Логистик на ладони</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: sticky top bar with period filter, scrollable content, bottom tab bar on phones / top tabs on desktop. Data-dense cards, tabular numbers. */
+:root{--bg:#f3f4f1;--panel:#ffffff;--fg:#1b2430;--muted:#66717f;--line:#dfe3e8;--accent:#2b6a8c;--accent2:#d6893a;--ok:#2e7d4f;--bad:#b23b3b;--warn:#b7791f;--chip:#e9eef2;--head:#1e2a38;--headfg:#ffffff;--c1:#2b6a8c;--c2:#d6893a;--c3:#5a9c6b;--c4:#b94a48;--c5:#7b6bb0;--c6:#8b7355;--muted-bar:#aab4bf}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#121619;--panel:#1b2127;--fg:#e6e9ec;--muted:#98a3ae;--line:#2d363f;--accent:#6fb3d8;--accent2:#e3a35e;--ok:#5fbf86;--bad:#e27070;--warn:#e0b25a;--chip:#273038;--head:#0f1418;--headfg:#e6e9ec;--c1:#6fb3d8;--c2:#e3a35e;--c3:#7cc08f;--c4:#e27070;--c5:#a79ad6;--c6:#b59a7c;--muted-bar:#55606b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121619;--panel:#1b2127;--fg:#e6e9ec;--muted:#98a3ae;--line:#2d363f;--accent:#6fb3d8;--accent2:#e3a35e;--ok:#5fbf86;--bad:#e27070;--warn:#e0b25a;--chip:#273038;--head:#0f1418;--headfg:#e6e9ec;--c1:#6fb3d8;--c2:#e3a35e;--c3:#7cc08f;--c4:#e27070;--c5:#a79ad6;--c6:#b59a7c;--muted-bar:#55606b;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.4;font-variant-numeric:tabular-nums;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--head)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--head);color:var(--headfg);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:16px;font-weight:600;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .meta{font-size:11px;opacity:.7;white-space:nowrap}
+.top select{background:rgba(255,255,255,.12);color:var(--headfg);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:6px 8px;font-size:13px}
+.top select option{background:var(--head);color:var(--headfg)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--line);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));position:sticky;top:calc(env(safe-area-inset-top,0px) + 52px);z-index:8;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:10px 12px;font-size:13px;white-space:nowrap;cursor:pointer;font-weight:500}
+nav.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+main{padding-block:14px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1440px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.tile .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}.tile .v{font-size:20px;font-weight:700;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tile .s{font-size:11px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.card.wide{grid-column:1/-1}
+.card h3{font-size:14px;font-weight:600;margin:0}.card .note{font-size:12px;color:var(--muted);margin:0}
+.chart{position:relative;height:240px}.chart canvas{max-width:100%}
+.tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--panel)}
+td{padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+td.n,th.n{text-align:right}td.neg{color:var(--bad)}td.pos{color:var(--ok)}
+tr.link{cursor:pointer}tr.link:hover td{background:var(--chip)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filters select,.filters input{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;max-width:100%;min-width:0}
+.filters input{flex:1;min-width:160px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{background:var(--chip);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;border:1px solid transparent}.chip.on{border-color:var(--accent);color:var(--accent)}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer;font-weight:600}.btn.sec{background:var(--chip);color:var(--fg)}
+.btn:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.summary{font-size:13px;color:var(--muted)}
+.bar{height:6px;background:var(--chip);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--accent);cursor:pointer;font-weight:600;background:none;border:0;font-size:14px;padding:0}
+.status{font-size:13px;padding:10px 12px;border-radius:8px;background:var(--chip)}
+.status.ok{color:var(--ok)}.status.bad{color:var(--bad)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}.kv b{font-weight:600}
+.hidden{display:none!important}
+.gate{position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}.gatebox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:10px}.gatebox h2{margin:0;font-size:18px}.gatebox p{margin:0;color:var(--muted);font-size:13px}.gatebox input[type=password]{padding:10px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:var(--bg);color:var(--fg)}.remember{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+@media (max-width:700px){.card .tbl table{font-size:12px}.tile .v{font-size:18px}}
+@media (prefers-reduced-motion:no-preference){.tile,.card{animation:fade .25s ease-out}}@keyframes fade{from{opacity:.6}to{opacity:1}}
+</style>
+<div id="gate" class="gate"><div class="gatebox"><h2>Неруд-Логистик на ладони</h2><p>Введите пароль, чтобы расшифровать данные.</p><input id="pw" type="password" placeholder="Пароль" autocomplete="current-password"><label class="remember"><input type="checkbox" id="pw-keep" checked> запомнить на этом устройстве</label><button class="btn" id="pw-go">Войти</button><div id="pw-err" class="status bad hidden">Неверный пароль</div></div></div>
+<div class="top">
+  <h1>Неруд-Логистик на ладони</h1>
+  <span class="meta" id="meta">загрузка…</span>
+  <select id="f-period" aria-label="Период"><option value="all">Весь год</option></select>
+</div>
+<nav class="tabs" id="tabs">
+  <button data-v="over" class="on">Обзор</button><button data-v="trips">Рейсы</button><button data-v="carr">Перевозчики</button><button data-v="cust">Заказчики</button><button data-v="fleet">Машины и водители</button><button data-v="debt">Долги</button><button data-v="cash">Деньги</button><button data-v="docs">Документы</button><button data-v="load">Загрузка</button>
+</nav>
+<main id="main"><div class="empty">Загружаю данные…</div></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>// Общий парсер таблиц Неруд-Логистик. Работает в браузере (window.NLParse) и в node (module.exports).
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.NLParse = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+  const MLAB = {'Январь':'01','Февраль':'02','Март':'03','Апрель':'04','Май':'05','Июнь':'06','Июль':'07','август':'08','сентябрь':'09','октябрь':'10','ноябрь':'11','декабрь':'12'};
+  const BASE = ['d','p','dr','tr','mk','fr','to','c','k','pz','pp','bn','ttn','wu','wl','sz','sp','foto','orig','ttnc','com','r','t','l','post','sup','pc','upd'];
+  const LOG = {'к':'Ксения','ю':'Юлия','е':'Евгения'};
+  const str = v => v == null ? '' : String(v).trim();
+  const num = v => { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; const s = String(v).replace(/ /g,'').replace(/\s/g,'').replace(',','.'); const n = parseFloat(s); return isNaN(n) ? null : n; };
+  const bool = v => v === true || v === 'TRUE' || v === 'true' || v === 1;
+  function toDate(v) {
+    if (v instanceof Date) return isNaN(v) ? null : v;
+    if (typeof v === 'number' && v > 20000 && v < 80000) { const d = new Date(Math.round((v - 25569) * 86400000)); return isNaN(d) ? null : d; }
+    if (typeof v === 'string') { const m = v.match(/(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})/); if (m) { let y = +m[3]; if (y < 100) y += 2000; const d = new Date(Date.UTC(y, +m[2]-1, +m[1])); return isNaN(d) ? null : d; } const d = new Date(v); return isNaN(d) ? null : d; }
+    return null;
+  }
+  const iso = d => d ? new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10) : '';
+  function normCustomer(s) {
+    let z = str(s).replace(/^ООО\s+/i,'').replace(/^ОО\s+/i,'').replace(/"/g,'').replace(/^ООо\s+/i,'').trim();
+    const u = z.toUpperCase();
+    if (u.startsWith('УПТК')) return 'УПТК СК МОСТ';
+    if (u.startsWith('ССП-ЮГ')) return 'ССП-Юг';
+    if (u.startsWith('МТТ') || u === 'МТТ') return 'МТТ';
+    if (u.startsWith('ИМПУЛЬС')) return 'Импульс';
+    if (u.startsWith('ПРОФРЕГИОН')) return 'Профрегион';
+    if (u.startsWith('ЭНЕРТЕХ')) return 'Энертех';
+    if (u.startsWith('ЭЛЬДОН')) return 'ЭльдонЭкспо';
+    if (u.startsWith('ГАРД')) return 'Гард';
+    if (u === 'ЕКС' || u === 'АО ЕКС') return 'ЕКС';
+    if (u.startsWith('ТОРГОВЫЙ ДОМ ДОНЦЕМЕНТ') || u.startsWith('ТД ДОНЦЕМЕНТ')) return 'ТД Донцемент';
+    return z || '—';
+  }
+  function normCarrier(s) { return str(s).replace(/^ООО\s*/i,'').replace(/"/g,'').replace(/\s+/g,' ').trim() || '—'; }
+  function matCat(k) {
+    const m = str(k).toLowerCase();
+    if (/фбс/.test(m)) return 'ФБС';
+    if (/песок|пескогрунт/.test(m)) return 'Песок';
+    if (/щеб|щпс|отсев|гпс|камень|шлак|клинкер|бут/.test(m)) return 'Щебень/ЩПС/отсев';
+    if (/уголь/.test(m)) return 'Уголь';
+    if (/жби|плит|блок|кольц/.test(m)) return 'ЖБИ';
+    return 'Прочее';
+  }
+  function normFbs(k) {
+    const s = str(k).toLowerCase().replace('фбс','').trim(); const n = s.match(/\d+/g);
+    if (!n || n.length < 3) return 'ФБС (без размера)';
+    let a = n.slice(0,3).map(Number); if (a[0] >= 100) a = a.map(x => Math.round(x/10)); if (a[1] >= 10) a = [a[0], Math.round(a[1]/10), Math.round(a[2]/10)];
+    return `ФБС ${a[0]}.${a[1]}.${a[2]}`;
+  }
+  // ---------- график ----------
+  function parseGrafik(wb, XLSX) {
+    const rows = []; const sheets = [];
+    for (const name of wb.SheetNames) {
+      const mi = MONTHS.indexOf(name); if (mi < 0) continue;
+      const ws = wb.Sheets[name]; const aoa = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, cellDates:true, defval:null});
+      let cols = BASE.slice(); if (name === 'Январь') cols = cols.filter(c => c !== 'mk');
+      if (mi >= 3) cols = cols.concat(['wr','ma','paid','etrn']); else cols = cols.concat(['ma']);
+      let n = 0;
+      for (let i = 1; i < aoa.length; i++) {
+        const a = aoa[i]; if (!a || !a.slice(0,12).some(v => v !== null && v !== '')) continue;
+        const o = {}; cols.forEach((c, j) => o[c] = a[j] === undefined ? null : a[j]);
+        const cust = str(o.c);
+        if (name === 'Июнь' && /эльдон/i.test(cust)) continue; // сводные строки — не выручка
+        const d = toDate(o.d); const post = bool(o.post); const bn = bool(o.bn);
+        const r = num(o.r), t = num(o.t), ma = post ? (num(o.ma) || 0) : 0;
+        const net = (r || 0) - (t || 0) - ma;
+        rows.push({ d: iso(d), m: MLAB[name], sh: name, l: LOG[str(o.l).toLowerCase()] || '—',
+          c: cust || '—', c2: normCustomer(cust), p: normCarrier(o.p), dr: str(o.dr), tr: str(o.tr).toUpperCase().replace(/\s/g,''), mk: str(o.mk),
+          fr: str(o.fr), to: str(o.to), k: str(o.k), kat: matCat(o.k), fbs: /фбс/i.test(str(o.k)) ? normFbs(o.k) : '',
+          pz: num(o.pz), pp: num(o.pp), bn, wl: num(o.wl), wu: num(o.wu), r, t, post, sup: str(o.sup), pc: num(o.pc), ma,
+          net, tn: t == null && r != null, ttn: str(o.ttn), foto: !!str(o.foto) && str(o.foto).toLowerCase() !== 'none', orig: /ориг|подпис|скан|экз/i.test(str(o.orig)) && !/^(в цену|оплата|коф)/i.test(str(o.orig)),
+          sz: str(o.sz), sp: str(o.sp), upd: str(o.upd), com: str(o.com), paid: o.paid == null ? '' : str(o.paid) });
+        n++;
+      }
+      sheets.push({name, rows: n});
+    }
+    return { rows, sheets };
+  }
+  // ---------- сверки ----------
+  function parseSverki(wb, XLSX) {
+    const cust = [], carr = [];
+    const cs = wb.SheetNames.find(n => /НЛ\s*2026/i.test(n)); const ps = wb.SheetNames.find(n => n.trim() === '2026');
+    if (cs) { const aoa = XLSX.utils.sheet_to_json(wb.Sheets[cs], {header:1, raw:true, cellDates:true, defval:null});
+      for (let i = 1; i < aoa.length; i++) { const a = aoa[i]; if (!a || !a.slice(0,8).some(v => v !== null && v !== '')) continue;
+        const inv = str(a[1]); const dm = inv.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+        cust.push({ inv, sum: num(a[2]), doc: str(a[3]), c: str(a[4]), c2: normCustomer(a[4]).toUpperCase(), paid: num(a[5]), paidRaw: str(a[5]), pd: iso(toDate(a[6])), com: str(a[7]), upd: str(a[8]), edo: str(a[9]), idate: dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : '' }); } }
+    if (ps) { const aoa = XLSX.utils.sheet_to_json(wb.Sheets[ps], {header:1, raw:true, cellDates:true, defval:null});
+      for (let i = 1; i < aoa.length; i++) { const a = aoa[i]; if (!a || !a.slice(0,15).some(v => v !== null && v !== '')) continue;
+        carr.push({ p: str(a[1]), p2: normCarrier(a[1]).toUpperCase().replace(/^ИП\s+/,''), inv: str(a[2]), sum: num(a[3]), c: str(a[8]), paid: num(a[10]), paidRaw: str(a[10]), pd: iso(toDate(a[11])), rate: num(a[12]), com: str(a[14]) }); } }
+    return { cust, carr };
+  }
+  // ---------- банк ----------
+  function catBank(cp, inn, purpose) {
+    const nn = purpose.toLowerCase(), kk = cp.toLowerCase();
+    if (/уптк ск мост/.test(kk)) return 'Заказчики';
+    if (/взыскан|исполнительн|и\/п |пошлин|росп|судебн/.test(nn) || /росп|судебн/.test(kk)) return 'Суды/приставы';
+    if (/казначейств|уфк|фнс/.test(kk) || inn === '7727406020' || /единый налоговый|енп|ст\. 79 нк/.test(nn)) return 'Налоги/взносы';
+    if (/депозит/.test(nn) && !/aviasales/.test(nn)) return 'Депозит';
+    const isBank = inn === '7707083893' || inn === '7728168971' || /сбербанк|альфа-банк/.test(kk) && !/ип /.test(kk);
+    if (isBank) { if (/заработн|зарплат|реестр/.test(nn)) return 'Зарплата'; if (/кредит|займ/.test(nn)) return 'Займы/кредиты'; if (/нал/.test(nn)) return 'Наличные'; return 'Банк. комиссии'; }
+    if (/заработн|зарплат/.test(nn)) return 'Зарплата';
+    if (/лизинг/.test(nn) || /европлан|каркаде/.test(kk)) return 'Лизинг';
+    if (/дивиденд/.test(nn)) return 'Дивиденды';
+    if (/займ|кредит/.test(nn)) return 'Займы/кредиты';
+    if (/яндекс/.test(kk) || /реклам/.test(nn)) return 'Реклама';
+    if (/аренд/.test(nn) || /город будущего|водопад/.test(kk)) return 'Аренда';
+    if (/контур|битрикс|ростелеком|интернет решения/.test(kk) || /aviasales/.test(nn)) return 'IT/сервисы';
+    if (/возврат/.test(nn)) return 'Возвраты';
+    return 'Контрагенты';
+  }
+  function parseBank(wb, XLSX) {
+    const ops = []; let bank = '', acct = '';
+    for (const name of wb.SheetNames) {
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, raw:true, cellDates:true, defval:null});
+      const flat = aoa.slice(0,15).flat().map(v => str(v)).join(' | ');
+      if (/Выписка по счёту|Выписка по счету/i.test(flat) && /Владелец/i.test(flat)) {
+        bank = 'Альфа'; acct = str(aoa[0] && aoa[0][1]).replace(/\s/g,'');
+        for (let i = 12; i < aoa.length; i++) { const a = aoa[i]; if (!a) continue; const d = toDate(a[0]); if (!d || (typeof a[0] === 'string' && !/\d{2}\.\d{2}\.\d{4}/.test(a[0]))) continue;
+          const cp = str(a[4]), inn = str(a[5]), pu = str(a[10]); ops.push({ bank, d: iso(d), out: num(a[2]) || 0, inn: inn, cp, pu, in_: num(a[3]) || 0, cat: catBank(cp, inn, pu), own: inn === '6163228958' || /между счетами/i.test(pu) }); }
+      } else if (/СБЕРБАНК|ВЫПИСКА ОПЕРАЦИЙ/i.test(flat)) {
+        bank = 'Сбер'; const m = flat.match(/4070\d{16}/); acct = m ? m[0] : '';
+        for (let i = 11; i < aoa.length; i++) { const a = aoa[i]; if (!a) continue; const d = toDate(a[1]); if (!d) continue; if (typeof a[1] === 'string' && !/\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4}/.test(a[1])) continue;
+          const deb = str(a[4]), kred = str(a[8]); const out = num(a[9]) || 0, inn_ = num(a[13]) || 0; const cpCell = out ? kred : deb; const parts = cpCell.split('\n'); const cp = parts[2] ? parts[2].trim() : cpCell; const inn = parts[1] ? parts[1].trim() : ''; const pu = str(a[20]);
+          ops.push({ bank, d: iso(d), out, in_: inn_, inn, cp, pu, cat: catBank(cp, inn, pu), own: inn === '6163228958' || /между счетами/i.test(pu) }); }
+      }
+    }
+    return { bank, acct, ops };
+  }
+  function detect(wb) {
+    if (wb.SheetNames.some(n => MONTHS.includes(n))) return 'grafik';
+    if (wb.SheetNames.some(n => /НЛ\s*2026/i.test(n)) || wb.SheetNames.includes('2026')) return 'sverki';
+    return 'bank';
+  }
+  const GCOLS = ['d','m','l','c2','p','dr','tr','mk','fr','to','k','kat','fbs','pz','pp','bn','wl','wu','r','t','post','sup','pc','ma','net','tn','ttn','foto','orig','sz','sp','upd','paid','c'];
+  const DICT = new Set(['l','c2','p','dr','tr','mk','fr','to','k','kat','fbs','sup','ttn','sz','sp','upd','paid','c','d','m']);
+  function pack(g) { const dict = []; const idx = new Map(); const enc = v => { if (v === null || v === undefined || v === '') return null; let i = idx.get(v); if (i === undefined) { i = dict.length; dict.push(v); idx.set(v, i); } return i; };
+    const rows = g.rows.map(o => GCOLS.map(c => DICT.has(c) ? enc(o[c]) : (o[c] === undefined ? null : o[c])));
+    return { cols: GCOLS, dict, rows, sheets: g.sheets }; }
+  function unpack(pk) { const cols = pk.cols, dict = pk.dict || null; return { rows: pk.rows.map(a => { const o = {}; cols.forEach((c, i) => { const v = a[i]; o[c] = (dict && DICT.has(c)) ? (v === null ? '' : dict[v]) : v; }); return o; }), sheets: pk.sheets }; }
+  return { parseGrafik, parseSverki, parseBank, detect, normCustomer, normCarrier, MONTHS, pack, unpack, GCOLS };
+});
+</script>
+<script>
+(function(){
+const $=s=>document.querySelector(s); const main=$('#main');
+const R=22/122;
+const fmt=new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0});
+const F=v=>fmt.format(Math.round(v||0))+' ₽';
+const N=v=>fmt.format(Math.round(v||0));
+const M=v=>{v=v||0;const a=Math.abs(v);return a>=1e6?(v/1e6).toLocaleString('ru-RU',{maximumFractionDigits:1})+' млн':a>=1e3?Math.round(v/1e3).toLocaleString('ru-RU')+' тыс.':fmt.format(Math.round(v))};
+const T=v=>(v||0).toLocaleString('ru-RU',{maximumFractionDigits:1});
+const pct=(a,b)=>b?((a/b)*100).toFixed(1)+'%':'—';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MN={'01':'Январь','02':'Февраль','03':'Март','04':'Апрель','05':'Май','06':'Июнь','07':'Июль','08':'Август','09':'Сентябрь','10':'Октябрь','11':'Ноябрь','12':'Декабрь'};
+const col=()=>getComputedStyle(document.documentElement);
+const CC=()=>['--c1','--c2','--c3','--c4','--c5','--c6'].map(k=>col().getPropertyValue(k).trim());
+const st={view:'over',period:'all',sel:null,g:[],s:null,b:null,meta:null,caps:{db:null,assets:null,user:null},charts:{},tf:{c:'all',p:'all',k:'all',l:'all',q:'',page:1},sort:{}};
+// ---------- helpers ----------
+const clean=r=>r.net-(r.net*R)-(r.bn?(r.t||0)*R:0); // чистыми после НДС
+function rowsNow(){return st.period==='all'?st.g:st.g.filter(r=>r.m===st.period)}
+function agg(rows,key,extra){const m=new Map();for(const r of rows){const k=typeof key==='function'?key(r):r[key];let g=m.get(k);if(!g){g={k,n:0,r:0,t:0,ma:0,net:0,cl:0,w:0,bn:0,orig:0,foto:0,ttn:0,tn:0,set:{}};m.set(k,g)}g.n++;g.r+=r.r||0;g.t+=r.t||0;g.ma+=r.ma||0;g.net+=r.net||0;g.cl+=clean(r);g.w+=(r.wu!=null?r.wu:r.wl)||0;g.bn+=r.bn?1:0;g.orig+=r.orig?1:0;g.foto+=r.foto?1:0;g.ttn+=r.ttn?1:0;g.tn+=r.tn?1:0;if(extra)extra(g,r)}return [...m.values()]}
+function uniqCount(g,f,v){g.set[f]=g.set[f]||new Set();if(v)g.set[f].add(v)}
+function table(id,cols,rows,opts={}){const s=st.sort[id]||{k:opts.sortKey||cols[1].k,d:-1};const srt=[...rows].sort((a,b)=>{const x=a[s.k],y=b[s.k];if(typeof x==='string'||typeof y==='string')return String(x||'').localeCompare(String(y||''),'ru')*s.d*-1;return ((x||0)-(y||0))*s.d});
+  const lim=opts.limit||srt.length;let h=`<div class="tbl"><table id="${id}"><thead><tr>`+cols.map(c=>`<th class="${c.n?'n':''}" data-k="${c.k}">${c.l}${s.k===c.k?(s.d<0?' ▼':' ▲'):''}</th>`).join('')+'</tr></thead><tbody>';
+  srt.slice(0,lim).forEach((r,i)=>{h+=`<tr class="${opts.link?'link':''}" data-i="${rows.indexOf(r)}">`+cols.map(c=>{const v=c.f?c.f(r):r[c.k];const neg=typeof r[c.k]==='number'&&r[c.k]<0&&c.n;return `<td class="${c.n?'n':''} ${neg?'neg':''}">${v==null?'':v}</td>`}).join('')+'</tr>'});
+  h+='</tbody></table></div>';if(srt.length>lim)h+=`<div class="summary">Показано ${lim} из ${srt.length}. <button class="chip" data-more="${id}">Показать ещё</button></div>`;return h}
+function bindTable(id,rows,onRow){const t=document.getElementById(id);if(!t)return;t.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;const s=st.sort[id]||{};st.sort[id]={k,d:s.k===k?-s.d:-1};render()});if(onRow)t.querySelectorAll('tr.link').forEach(tr=>tr.onclick=()=>onRow(rows[+tr.dataset.i]))}
+function chart(id,cfg){const c=document.getElementById(id);if(!c||typeof Chart==='undefined')return;if(st.charts[id])st.charts[id].destroy();Chart.defaults.color=col().getPropertyValue('--muted').trim();Chart.defaults.borderColor=col().getPropertyValue('--line').trim();Chart.defaults.font.family=getComputedStyle(document.body).fontFamily;st.charts[id]=new Chart(c.getContext('2d'),cfg)}
+function tiles(list){return '<div class="tiles">'+list.map(t=>`<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div><div class="s">${t.s||''}</div></div>`).join('')+'</div>'}
+function sel(id,label,vals,cur,all){return `<select id="${id}" aria-label="${label}"><option value="all">${all}</option>${vals.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('')}</select>`}
+function periodLabel(){return st.period==='all'?'весь год':MN[st.period]}
+// ---------- views ----------
+function vOver(){const d=rowsNow();if(!d.length)return '<div class="empty">Нет данных графика. Загрузите файл во вкладке «Загрузка».</div>';
+  const r=d.reduce((s,x)=>s+(x.r||0),0),t=d.reduce((s,x)=>s+(x.t||0),0),ma=d.reduce((s,x)=>s+(x.ma||0),0),net=r-t-ma,cl=d.reduce((s,x)=>s+clean(x),0),w=d.reduce((s,x)=>s+((x.wu!=null?x.wu:x.wl)||0),0);
+  const cust=agg(d,'c2').sort((a,b)=>b.r-a.r);const carr=agg(d,'p').sort((a,b)=>b.t-a.t);const tn=d.filter(x=>x.tn);
+  let h=tiles([{k:'Рейсов',v:N(d.length),s:periodLabel()},{k:'Тонн',v:N(w),s:'по выгрузке, иначе по загрузке'},{k:'Выручка',v:M(r)+' ₽',s:F(r)},{k:'Перевозчикам',v:M(t)+' ₽',s:pct(t,r)+' выручки'},{k:'Материал',v:M(ma)+' ₽',s:pct(ma,r)+' выручки'},{k:'Нетто до НДС',v:M(net)+' ₽',s:pct(net,r)},{k:'Чистыми после НДС',v:M(cl)+' ₽',s:N(d.length?cl/d.length:0)+' ₽ с рейса'}]);
+  if(tn.length)h+=`<div class="status">⚠ ${tn.length} рейсов без цены перевозчика на ${M(tn.reduce((s,x)=>s+(x.r||0),0))} ₽ выручки — нетто по ним завышено.</div>`;
+  h+='<div class="grid"><div class="card"><h3>Выручка и чистыми по месяцам</h3><p class="note">Столбцы — выручка, линия — чистыми после НДС (правая ось).</p><div class="chart"><canvas id="ch-m"></canvas></div></div>';
+  h+='<div class="card"><h3>Рейсов в день по логистам</h3><p class="note">Рейсов за месяц / дни с рейсами.</p><div class="chart"><canvas id="ch-l"></canvas></div></div>';
+  h+='<div class="card"><h3>Заказчики</h3><p class="note">Выручка и чистыми с рейса. Клик — подробности.</p>'+table('t-oc',[{k:'k',l:'Заказчик'},{k:'n',l:'Рейсов',n:1,f:x=>N(x.n)},{k:'r',l:'Выручка',n:1,f:x=>M(x.r)},{k:'cl',l:'Чистыми',n:1,f:x=>M(x.cl)},{k:'pt',l:'С рейса',n:1,f:x=>N(x.pt)}],cust.map(x=>({...x,pt:x.cl/x.n})),{limit:10,link:1})+'</div>';
+  h+='<div class="card"><h3>Перевозчики</h3><p class="note">Кому платим больше всего. Клик — подробности.</p>'+table('t-op',[{k:'k',l:'Перевозчик'},{k:'n',l:'Рейсов',n:1,f:x=>N(x.n)},{k:'t',l:'Выплачено',n:1,f:x=>M(x.t)},{k:'bn',l:'Без НДС',n:1,f:x=>N(x.bn)}],carr,{limit:10,link:1})+'</div>';
+  if(st.b&&st.b.ops.length){h+='<div class="card"><h3>Деньги на счетах</h3><p class="note">Остаток на конец месяца и минимум внутри месяца, по выпискам.</p><div class="chart"><canvas id="ch-cash"></canvas></div></div>'}
+  if(st.s&&st.s.cust.length){const deb=debts();h+='<div class="card"><h3>Кто должен</h3><p class="note">По таблице сверок: выставлено − оплачено.</p>'+table('t-od',[{k:'k',l:'Заказчик'},{k:'debt',l:'Долг',n:1,f:x=>M(x.debt)},{k:'old',l:'Старше 60 дн.',n:1,f:x=>M(x.old)}],deb.filter(x=>x.debt>500000),{limit:8})+'</div>'}
+  h+='</div>';return h}
+function afterOver(){const d=rowsNow();const ms=[...new Set(st.g.map(x=>x.m))].sort();const base=st.period==='all'?st.g:d;const by=m=>base.filter(x=>x.m===m);const C=CC();
+  chart('ch-m',{data:{labels:ms.map(m=>MN[m].slice(0,3)),datasets:[{type:'bar',label:'Выручка',data:ms.map(m=>by(m).reduce((s,x)=>s+(x.r||0),0)),backgroundColor:C[0]+'cc',borderRadius:4,yAxisID:'y'},{type:'line',label:'Чистыми',data:ms.map(m=>by(m).reduce((s,x)=>s+clean(x),0)),borderColor:C[1],backgroundColor:C[1],tension:.2,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+F(c.parsed.y)}}},scales:{y:{ticks:{callback:v=>M(v)},beginAtZero:true},y1:{position:'right',grid:{display:false},ticks:{callback:v=>M(v)}}}}});
+  const ls=['Ксения','Юлия','Евгения'];chart('ch-l',{type:'line',data:{labels:ms.map(m=>MN[m].slice(0,3)),datasets:ls.map((l,i)=>({label:l,data:ms.map(m=>{const x=by(m).filter(r=>r.l===l);const days=new Set(x.map(r=>r.d)).size;return days?+(x.length/days).toFixed(1):0}),borderColor:C[i],backgroundColor:C[i],tension:.2}))},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true}}}});
+  if(st.b&&st.b.ops.length){const cb=cashByMonth();chart('ch-cash',{data:{labels:cb.map(x=>MN[x.m].slice(0,3)),datasets:[{type:'line',label:'Конец месяца',data:cb.map(x=>x.end),borderColor:C[0],backgroundColor:C[0],tension:.2},{type:'line',label:'Минимум',data:cb.map(x=>x.min),borderColor:C[3],backgroundColor:C[3],showLine:false,pointRadius:5}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+F(c.parsed.y)}}},scales:{y:{ticks:{callback:v=>M(v)}}}}})}
+  const cust=agg(d,'c2').sort((a,b)=>b.r-a.r).map(x=>({...x,pt:x.cl/x.n}));bindTable('t-oc',cust,x=>{st.view='cust';st.sel={t:'cust',k:x.k};render()});
+  const carr=agg(d,'p').sort((a,b)=>b.t-a.t);bindTable('t-op',carr,x=>{st.view='carr';st.sel={t:'carr',k:x.k};render()});bindTable('t-od',[]);}
+function tripFilters(d){const u=k=>[...new Set(d.map(x=>x[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));const f=st.tf;
+  return `<div class="filters">${sel('tf-c','Заказчик',u('c2'),f.c,'Все заказчики')}${sel('tf-p','Перевозчик',u('p'),f.p,'Все перевозчики')}${sel('tf-k','Материал',u('kat'),f.k,'Все материалы')}${sel('tf-l','Логист',u('l'),f.l,'Все логисты')}<input id="tf-q" placeholder="Поиск: водитель, номер, адрес, материал, ТТН" value="${esc(f.q)}"></div>`}
+function tripRows(d){const f=st.tf;const q=f.q.trim().toLowerCase();return d.filter(x=>(f.c==='all'||x.c2===f.c)&&(f.p==='all'||x.p===f.p)&&(f.k==='all'||x.kat===f.k)&&(f.l==='all'||x.l===f.l)&&(!q||[x.dr,x.tr,x.fr,x.to,x.k,x.ttn,x.p,x.c2,x.sup,x.mk].join(' ').toLowerCase().includes(q)))}
+const TCOLS=[{k:'d',l:'Дата'},{k:'c2',l:'Заказчик'},{k:'p',l:'Перевозчик'},{k:'dr',l:'Водитель'},{k:'tr',l:'Машина'},{k:'k',l:'Материал'},{k:'fr',l:'Загрузка',f:x=>esc(x.fr.slice(0,28))},{k:'to',l:'Выгрузка',f:x=>esc(x.to.slice(0,28))},{k:'wu',l:'Вес выгр.',n:1,f:x=>x.wu==null?'':T(x.wu)},{k:'wl',l:'Вес загр.',n:1,f:x=>x.wl==null?'':T(x.wl)},{k:'pz',l:'Цена зак.',n:1,f:x=>x.pz==null?'':N(x.pz)},{k:'pp',l:'Цена пер.',n:1,f:x=>x.pp==null?'':N(x.pp)},{k:'r',l:'Заказчик ₽',n:1,f:x=>N(x.r)},{k:'t',l:'Перевозчик ₽',n:1,f:x=>x.t==null?'<span class="neg">нет</span>':N(x.t)},{k:'ma',l:'Материал ₽',n:1,f:x=>x.post?N(x.ma):''},{k:'net',l:'Нетто',n:1,f:x=>N(x.net)},{k:'l',l:'Логист'},{k:'docs',l:'ТТН / фото / ориг',f:x=>(x.ttn?'№ ':'— ')+(x.foto?'📷 ':'— ')+(x.orig?'✓':'—')},{k:'sup',l:'Поставщик'}];
+function vTrips(){const d=rowsNow();if(!d.length)return '<div class="empty">Нет данных.</div>';const rows=tripRows(d);const r=rows.reduce((s,x)=>s+(x.r||0),0),net=rows.reduce((s,x)=>s+(x.net||0),0),w=rows.reduce((s,x)=>s+((x.wu!=null?x.wu:x.wl)||0),0);
+  return `<div class="card"><h3>Рейсы — ${periodLabel()}</h3>${tripFilters(d)}<div class="summary">${N(rows.length)} рейсов · ${N(w)} т · выручка ${F(r)} · нетто ${F(net)} · ${N(rows.length?net/rows.length:0)} ₽ с рейса</div>${table('t-trips',TCOLS,rows,{limit:100*st.tf.page,sortKey:'d'})}</div>`}
+function afterTrips(){['tf-c','tf-p','tf-k','tf-l'].forEach(id=>{const e=document.getElementById(id);if(e)e.onchange=()=>{st.tf[id.slice(3)]=e.value;st.tf.page=1;render()}});const q=document.getElementById('tf-q');if(q){let t;q.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{st.tf.q=q.value;st.tf.page=1;render();const n=document.getElementById('tf-q');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},350)}}bindTable('t-trips',tripRows(rowsNow()))}
+function entityView(type){const d=rowsNow();if(!d.length)return '<div class="empty">Нет данных.</div>';const key=type==='carr'?'p':'c2';
+  if(st.sel&&st.sel.t===type){return detail(type,st.sel.k,d.filter(x=>x[key]===st.sel.k))}
+  const list=agg(d,key,(g,r)=>{uniqCount(g,'tr',r.tr);uniqCount(g,'dr',r.dr);uniqCount(g,'k',r.k);uniqCount(g,'c',type==='carr'?r.c2:r.p)}).map(g=>({...g,trs:g.set.tr?g.set.tr.size:0,drs:g.set.dr?g.set.dr.size:0,ks:g.set.k?g.set.k.size:0,cs:g.set.c?g.set.c.size:0,pt:g.cl/g.n,origp:g.orig/g.n*100,fotop:g.foto/g.n*100}));
+  const cols=type==='carr'?[{k:'k',l:'Перевозчик'},{k:'n',l:'Рейсов',n:1,f:x=>N(x.n)},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:'t',l:'Выплачено',n:1,f:x=>M(x.t)},{k:'bn',l:'Без НДС',n:1,f:x=>x.bn?N(x.bn):''},{k:'trs',l:'Машин',n:1},{k:'drs',l:'Водителей',n:1},{k:'cs',l:'Заказчиков',n:1},{k:'ks',l:'Материалов',n:1},{k:'fotop',l:'Фото ТТН',n:1,f:x=>x.fotop.toFixed(0)+'%'},{k:'origp',l:'Оригиналы',n:1,f:x=>x.origp.toFixed(0)+'%'}]
+    :[{k:'k',l:'Заказчик'},{k:'n',l:'Рейсов',n:1,f:x=>N(x.n)},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:'r',l:'Выручка',n:1,f:x=>M(x.r)},{k:'net',l:'Нетто',n:1,f:x=>M(x.net)},{k:'cl',l:'Чистыми',n:1,f:x=>M(x.cl)},{k:'pt',l:'С рейса',n:1,f:x=>N(x.pt)},{k:'cs',l:'Перевозчиков',n:1},{k:'ks',l:'Материалов',n:1},{k:'origp',l:'Оригиналы',n:1,f:x=>x.origp.toFixed(0)+'%'}];
+  return `<div class="card"><h3>${type==='carr'?'Перевозчики':'Заказчики'} — ${periodLabel()}</h3><p class="note">${list.length} ${type==='carr'?'перевозчиков':'заказчиков'}. Клик по строке — подробности.</p>${table('t-ent',cols,list,{link:1,sortKey:type==='carr'?'t':'r'})}</div>`}
+function detail(type,k,rows){const r=rows.reduce((s,x)=>s+(x.r||0),0),t=rows.reduce((s,x)=>s+(x.t||0),0),net=rows.reduce((s,x)=>s+(x.net||0),0),cl=rows.reduce((s,x)=>s+clean(x),0),w=rows.reduce((s,x)=>s+((x.wu!=null?x.wu:x.wl)||0),0);
+  const byK=agg(rows,'k').sort((a,b)=>b.n-a.n),byR=agg(rows,x=>x.fr.slice(0,30)+' → '+x.to.slice(0,30)).sort((a,b)=>b.n-a.n),byO=agg(rows,type==='carr'?'c2':'p').sort((a,b)=>b.n-a.n),byT=agg(rows,x=>x.tr||'(нет номера)',(g,x)=>uniqCount(g,'dr',x.dr)).map(g=>({...g,drs:[...(g.set.dr||[])].join(', ')})).sort((a,b)=>b.n-a.n),byM=agg(rows,'m').sort((a,b)=>a.k.localeCompare(b.k));
+  let h=`<button class="back" id="back">← ${type==='carr'?'Все перевозчики':'Все заказчики'}</button>`;
+  h+=`<div class="card"><h3>${esc(k)}</h3>`+tiles([{k:'Рейсов',v:N(rows.length),s:periodLabel()},{k:'Тонн',v:N(w)},{k:type==='carr'?'Выплачено':'Выручка',v:M(type==='carr'?t:r)+' ₽'},{k:'Нетто',v:M(net)+' ₽',s:type==='carr'?'по рейсам этого перевозчика':pct(net,r)},{k:'Чистыми с рейса',v:N(cl/rows.length)+' ₽'},{k:'Без НДС',v:N(rows.filter(x=>x.bn).length)+' рейсов'},{k:'Оригиналы ТТН',v:pct(rows.filter(x=>x.orig).length,rows.length)},{k:'Фото ТТН',v:pct(rows.filter(x=>x.foto).length,rows.length)}])+'</div>';
+  if(type==='cust'&&st.s){const deb=debts().find(x=>x.k===k.toUpperCase());if(deb)h+=`<div class="card"><h3>Расчёты по сверкам</h3><div class="kv"><b>Выставлено</b><span>${F(deb.inv)}</span><b>Оплачено</b><span>${F(deb.paid)}</span><b>Долг</b><span class="${deb.debt>0?'neg':''}">${F(deb.debt)}</span><b>Старше 60 дней</b><span>${F(deb.old)}</span></div></div>`}
+  if(type==='carr'&&st.s){const c=carrDebts().find(x=>x.k===k.toUpperCase().replace(/^ИП\s+/,''));if(c)h+=`<div class="card"><h3>Расчёты по сверкам</h3><div class="kv"><b>Начислено</b><span>${F(c.rate)}</span><b>Оплачено</b><span>${F(c.paid)}</span><b>${c.paid-c.rate>0?'Переплата':'Должны'}</b><span>${F(Math.abs(c.paid-c.rate))}</span></div></div>`}
+  h+='<div class="grid">';
+  h+='<div class="card"><h3>По месяцам</h3>'+table('t-dm',[{k:'k',l:'Месяц',f:x=>MN[x.k]},{k:'n',l:'Рейсов',n:1},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:type==='carr'?'t':'r',l:type==='carr'?'Выплачено':'Выручка',n:1,f:x=>M(type==='carr'?x.t:x.r)},{k:'net',l:'Нетто',n:1,f:x=>M(x.net)}],byM,{sortKey:'k'})+'</div>';
+  h+='<div class="card"><h3>Материалы</h3>'+table('t-dk',[{k:'k',l:'Материал'},{k:'n',l:'Рейсов',n:1},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:'r',l:'Выручка',n:1,f:x=>M(x.r)},{k:'net',l:'Нетто',n:1,f:x=>M(x.net)}],byK,{limit:12})+'</div>';
+  h+=`<div class="card"><h3>${type==='carr'?'Заказчики':'Перевозчики'}</h3>`+table('t-do',[{k:'k',l:type==='carr'?'Заказчик':'Перевозчик'},{k:'n',l:'Рейсов',n:1},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:type==='carr'?'r':'t',l:type==='carr'?'Выручка':'Выплачено',n:1,f:x=>M(type==='carr'?x.r:x.t)},{k:'bn',l:'Без НДС',n:1}],byO,{limit:12})+'</div>';
+  h+='<div class="card"><h3>Направления</h3>'+table('t-dr',[{k:'k',l:'Откуда → куда',f:x=>esc(x.k)},{k:'n',l:'Рейсов',n:1},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:'net',l:'Нетто',n:1,f:x=>M(x.net)}],byR,{limit:12})+'</div>';
+  h+='<div class="card wide"><h3>Машины и водители</h3>'+table('t-dt',[{k:'k',l:'Госномер'},{k:'drs',l:'Водители',f:x=>esc(x.drs)},{k:'n',l:'Рейсов',n:1},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:'avg',l:'Ср. загрузка',n:1,f:x=>T(x.w/x.n)},{k:'orig',l:'Оригиналов',n:1}],byT.map(x=>({...x,avg:x.w/x.n})),{limit:20})+'</div>';
+  h+='<div class="card wide"><h3>Рейсы</h3>'+table('t-dtr',TCOLS,rows,{limit:100*st.tf.page,sortKey:'d'})+'</div></div>';return h}
+function afterEntity(type){const b=document.getElementById('back');if(b)b.onclick=()=>{st.sel=null;render()};if(st.sel){['t-dm','t-dk','t-do','t-dr','t-dt','t-dtr'].forEach(id=>bindTable(id,[]));return}
+  const d=rowsNow();const key=type==='carr'?'p':'c2';const list=agg(d,key).map(g=>({...g}));const t=document.getElementById('t-ent');if(t){t.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;const s=st.sort['t-ent']||{};st.sort['t-ent']={k,d:s.k===k?-s.d:-1};render()});t.querySelectorAll('tr.link').forEach(tr=>tr.onclick=()=>{st.sel={t:type,k:tr.cells[0].textContent};render()})}}
+function vFleet(){const d=rowsNow();if(!d.length)return '<div class="empty">Нет данных.</div>';
+  const trucks=agg(d.filter(x=>x.tr),'tr',(g,x)=>{uniqCount(g,'dr',x.dr);uniqCount(g,'p',x.p);uniqCount(g,'mk',x.mk)}).map(g=>({...g,drs:[...(g.set.dr||[])].join(', '),ps:[...(g.set.p||[])].join(', '),mk:[...(g.set.mk||[])].join(', '),avg:g.w/g.n})).sort((a,b)=>b.n-a.n);
+  const drivers=agg(d.filter(x=>x.dr),'dr',(g,x)=>{uniqCount(g,'tr',x.tr);uniqCount(g,'p',x.p)}).map(g=>({...g,trs:[...(g.set.tr||[])].join(', '),ps:[...(g.set.p||[])].join(', '),avg:g.w/g.n})).sort((a,b)=>b.n-a.n);
+  const q=st.tf.q.trim().toLowerCase();const ft=q?trucks.filter(x=>(x.k+' '+x.drs+' '+x.ps+' '+x.mk).toLowerCase().includes(q)):trucks;const fd=q?drivers.filter(x=>(x.k+' '+x.trs+' '+x.ps).toLowerCase().includes(q)):drivers;
+  return `<div class="card"><h3>Машины и водители — ${periodLabel()}</h3><div class="filters"><input id="tf-q" placeholder="Поиск по номеру, водителю, перевозчику" value="${esc(st.tf.q)}"></div><div class="summary">${N(trucks.length)} машин · ${N(drivers.length)} водителей</div></div>
+  <div class="grid"><div class="card"><h3>Машины</h3>${table('t-tr',[{k:'k',l:'Госномер'},{k:'mk',l:'Марка',f:x=>esc(x.mk)},{k:'ps',l:'Перевозчик',f:x=>esc(x.ps.slice(0,40))},{k:'drs',l:'Водители',f:x=>esc(x.drs.slice(0,40))},{k:'n',l:'Рейсов',n:1},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:'avg',l:'Ср. загрузка',n:1,f:x=>T(x.avg)},{k:'t',l:'Выплачено',n:1,f:x=>M(x.t)}],ft,{limit:50,sortKey:'n'})}</div>
+  <div class="card"><h3>Водители</h3>${table('t-dr2',[{k:'k',l:'Водитель'},{k:'ps',l:'Перевозчик',f:x=>esc(x.ps.slice(0,40))},{k:'trs',l:'Машины',f:x=>esc(x.trs.slice(0,40))},{k:'n',l:'Рейсов',n:1},{k:'w',l:'Тонн',n:1,f:x=>N(x.w)},{k:'avg',l:'Ср. загрузка',n:1,f:x=>T(x.avg)},{k:'orig',l:'Оригиналов',n:1}],fd,{limit:50,sortKey:'n'})}</div></div>`}
+function afterFleet(){const q=document.getElementById('tf-q');if(q){let t;q.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{st.tf.q=q.value;render();const n=document.getElementById('tf-q');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},350)}}bindTable('t-tr',[]);bindTable('t-dr2',[])}
+function debts(){const m=new Map();const today=new Date();for(const x of st.s.cust){const k=x.c2||'—';let g=m.get(k);if(!g){g={k,inv:0,paid:0,old:0,n:0};m.set(k,g)}g.inv+=x.sum||0;g.paid+=x.paid||0;g.n++;const dd=(x.sum||0)-(x.paid||0);if(dd>1000&&x.idate){const age=(today-new Date(x.idate))/864e5;if(age>60)g.old+=dd}}return [...m.values()].map(g=>({...g,debt:g.inv-g.paid,old:Math.min(g.old,Math.max(0,g.inv-g.paid))})).sort((a,b)=>b.debt-a.debt)}
+function carrDebts(){const m=new Map();for(const x of st.s.carr){const k=x.p2||'—';let g=m.get(k);if(!g){g={k,rate:0,paid:0,inv:0,n:0};m.set(k,g)}g.rate+=x.rate||0;g.paid+=x.paid||0;g.inv+=x.sum||0;g.n++}return [...m.values()].map(g=>({...g,diff:g.paid-g.rate})).sort((a,b)=>b.diff-a.diff)}
+function vDebt(){if(!st.s||!st.s.cust.length)return '<div class="empty">Таблица сверок не загружена.</div>';const d=debts(),c=carrDebts();const tot=d.reduce((s,x)=>s+x.debt,0),old=d.reduce((s,x)=>s+x.old,0),over=c.filter(x=>x.diff>0).reduce((s,x)=>s+x.diff,0),owe=c.filter(x=>x.diff<0).reduce((s,x)=>s-x.diff,0);
+  return tiles([{k:'Нам должны',v:M(tot)+' ₽',s:'по сверкам, с сальдо 2025'},{k:'Старше 60 дней',v:M(old)+' ₽',s:'по дате счёта; оговорка — оплаты записаны отдельно'},{k:'Переплата поставщикам',v:M(over)+' ₽',s:'авансы или незанесённые начисления'},{k:'Мы должны',v:M(owe)+' ₽',s:'перевозчикам и поставщикам'}])+
+  `<div class="grid"><div class="card"><h3>Заказчики</h3><p class="note">Выставлено − оплачено. Клик — рейсы заказчика.</p>${table('t-dc',[{k:'k',l:'Заказчик'},{k:'inv',l:'Выставлено',n:1,f:x=>M(x.inv)},{k:'paid',l:'Оплачено',n:1,f:x=>M(x.paid)},{k:'debt',l:'Долг',n:1,f:x=>M(x.debt)},{k:'old',l:'Старше 60',n:1,f:x=>M(x.old)}],d.filter(x=>Math.abs(x.debt)>1000),{limit:30,sortKey:'debt'})}</div>
+  <div class="card"><h3>Перевозчики и поставщики</h3><p class="note">Начислено («ставка П») против оплачено. Плюс — переплата, минус — долг наш.</p>${table('t-dp',[{k:'k',l:'Контрагент'},{k:'rate',l:'Начислено',n:1,f:x=>M(x.rate)},{k:'paid',l:'Оплачено',n:1,f:x=>M(x.paid)},{k:'diff',l:'Разница',n:1,f:x=>M(x.diff)}],c.filter(x=>Math.abs(x.diff)>100000),{limit:30,sortKey:'diff'})}</div></div>`}
+function afterDebt(){bindTable('t-dc',[]);bindTable('t-dp',[])}
+function cashByMonth(){const ops=[...st.b.ops].sort((a,b)=>a.d.localeCompare(b.d));const start=st.b.start||0;let bal=start;const m=new Map();for(const o of ops){bal+=o.in_-o.out;const k=o.d.slice(5,7);let g=m.get(k);if(!g){g={m:k,in_:0,out:0,end:bal,min:bal};m.set(k,g)}if(!o.own){g.in_+=o.in_;g.out+=o.out}g.end=bal;g.min=Math.min(g.min,bal)}return [...m.values()]}
+function vCash(){if(!st.b||!st.b.ops.length)return '<div class="empty">Выписки не загружены.</div>';const ops=st.b.ops.filter(o=>!o.own&&(st.period==='all'||o.d.slice(5,7)===st.period));const inn=ops.reduce((s,o)=>s+o.in_,0),out=ops.reduce((s,o)=>s+o.out,0);const cats=agg2(ops,'cat');const cps=agg2(ops.filter(o=>o.cat==='Контрагенты'||o.cat==='Заказчики'),'cp');const cb=cashByMonth();const last=cb[cb.length-1];
+  return tiles([{k:'Пришло',v:M(inn)+' ₽',s:periodLabel()},{k:'Ушло',v:M(out)+' ₽'},{k:'Разница',v:M(inn-out)+' ₽'},{k:'Остаток сейчас',v:M(last?last.end:0)+' ₽',s:'оба счёта, на дату выписки'}])+
+  `<div class="grid"><div class="card"><h3>Остаток по месяцам</h3><div class="chart"><canvas id="ch-cash2"></canvas></div></div><div class="card"><h3>По категориям</h3>${table('t-cat',[{k:'k',l:'Категория'},{k:'n',l:'Операций',n:1},{k:'out',l:'Ушло',n:1,f:x=>M(x.out)},{k:'in_',l:'Пришло',n:1,f:x=>M(x.in_)}],cats,{sortKey:'out'})}</div>
+  <div class="card"><h3>Кто платил нам</h3>${table('t-in',[{k:'k',l:'Контрагент',f:x=>esc(x.k.slice(0,40))},{k:'n',l:'Платежей',n:1},{k:'in_',l:'Пришло',n:1,f:x=>M(x.in_)}],cps.filter(x=>x.in_>0),{limit:25,sortKey:'in_'})}</div>
+  <div class="card"><h3>Кому платили мы</h3>${table('t-out',[{k:'k',l:'Контрагент',f:x=>esc(x.k.slice(0,40))},{k:'n',l:'Платежей',n:1},{k:'out',l:'Ушло',n:1,f:x=>M(x.out)}],cps.filter(x=>x.out>0),{limit:25,sortKey:'out'})}</div>
+  <div class="card wide"><h3>Операции</h3><div class="filters"><input id="cq" placeholder="Поиск по контрагенту или назначению" value="${esc(st.tf.q)}"></div>${table('t-ops',[{k:'d',l:'Дата'},{k:'bank',l:'Банк'},{k:'cp',l:'Контрагент',f:x=>esc(x.cp.slice(0,40))},{k:'in_',l:'Пришло',n:1,f:x=>x.in_?N(x.in_):''},{k:'out',l:'Ушло',n:1,f:x=>x.out?N(x.out):''},{k:'cat',l:'Категория'},{k:'pu',l:'Назначение',f:x=>esc(x.pu.slice(0,70))}],ops.filter(o=>!st.tf.q||(o.cp+' '+o.pu).toLowerCase().includes(st.tf.q.toLowerCase())),{limit:100*st.tf.page,sortKey:'d'})}</div></div>`}
+function agg2(ops,key){const m=new Map();for(const o of ops){let g=m.get(o[key]);if(!g){g={k:o[key],n:0,in_:0,out:0};m.set(o[key],g)}g.n++;g.in_+=o.in_;g.out+=o.out}return [...m.values()]}
+function afterCash(){const C=CC();const cb=cashByMonth();chart('ch-cash2',{data:{labels:cb.map(x=>MN[x.m].slice(0,3)),datasets:[{type:'bar',label:'Пришло',data:cb.map(x=>x.in_),backgroundColor:C[2]+'bb',borderRadius:3},{type:'bar',label:'Ушло',data:cb.map(x=>x.out),backgroundColor:C[3]+'bb',borderRadius:3},{type:'line',label:'Остаток на конец',data:cb.map(x=>x.end),borderColor:C[0],backgroundColor:C[0],tension:.2}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+F(c.parsed.y)}}},scales:{y:{ticks:{callback:v=>M(v)}}}}});['t-cat','t-in','t-out','t-ops'].forEach(id=>bindTable(id,[]));const q=document.getElementById('cq');if(q){let t;q.oninput=()=>{clearTimeout(t);t=setTimeout(()=>{st.tf.q=q.value;st.tf.page=1;render();const n=document.getElementById('cq');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},350)}}}
+function vDocs(){const d=rowsNow();if(!d.length)return '<div class="empty">Нет данных.</div>';const byL=agg(d,'l').map(g=>({...g,ttnp:g.ttn/g.n*100,fotop:g.foto/g.n*100,origp:g.orig/g.n*100,szp:d.filter(x=>x.l===g.k&&x.sz).length/g.n*100,spp:d.filter(x=>x.l===g.k&&x.sp).length/g.n*100,updp:d.filter(x=>x.l===g.k&&x.upd).length/g.n*100}));
+  const miss=agg(d.filter(x=>!x.orig),'p',(g,x)=>uniqCount(g,'l',x.l)).map(g=>({...g,ls:[...(g.set.l||[])].join(', ')})).sort((a,b)=>b.n-a.n);
+  return `<div class="grid"><div class="card wide"><h3>Первичка по логистам — ${periodLabel()}</h3><p class="note">Доля рейсов, где заполнен номер ТТН, есть фото/скан, получен оригинал, выставлен счёт заказчику и перевозчику, есть УПД.</p>${table('t-dl',[{k:'k',l:'Логист'},{k:'n',l:'Рейсов',n:1},{k:'ttnp',l:'№ ТТН',n:1,f:x=>x.ttnp.toFixed(0)+'%'},{k:'fotop',l:'Фото',n:1,f:x=>x.fotop.toFixed(0)+'%'},{k:'origp',l:'Оригинал',n:1,f:x=>x.origp.toFixed(0)+'%'},{k:'szp',l:'Счёт заказчику',n:1,f:x=>x.szp.toFixed(0)+'%'},{k:'spp',l:'Счёт перевозчику',n:1,f:x=>x.spp.toFixed(0)+'%'},{k:'updp',l:'УПД нам',n:1,f:x=>x.updp.toFixed(0)+'%'}],byL,{sortKey:'n'})}</div>
+  <div class="card wide"><h3>Кто не отдал оригиналы</h3><p class="note">Перевозчики с рейсами без отметки «оригинал». Это список на обзвон.</p>${table('t-miss',[{k:'k',l:'Перевозчик'},{k:'n',l:'Рейсов без оригинала',n:1},{k:'t',l:'На сумму',n:1,f:x=>M(x.t)},{k:'ls',l:'Логист'}],miss,{limit:40,sortKey:'n'})}</div></div>`}
+function afterDocs(){bindTable('t-dl',[]);bindTable('t-miss',[])}
+function vLoad(){const m=st.meta||{};const row=(t,o)=>o?`<div class="kv"><b>${t}</b><span>${o.note||''} · загружено ${o.at?new Date(o.at).toLocaleString('ru-RU'):'—'}${o.by?' · '+esc(o.by):''}</span></div>`:`<div class="kv"><b>${t}</b><span class="summary">не загружено</span></div>`;
+  const can=true;
+  return `<div class="card"><h3>Загрузка таблиц</h3><p class="note">Выбери один или несколько файлов: «График перевозок 2026.xlsx», таблицу сверок, выписки Сбер и Альфа (Excel из интернет-банка). Страница сама определит, что это, разберёт и сохранит для всех, кто открывает её. Старая версия того же файла заменяется.</p>
+  <input type="file" id="files" accept=".xlsx,.xlsm,.xls" multiple><div class="filters"><input id="gh-name" placeholder="Кто загружает (имя)" value=""><button class="btn" id="go">Загрузить</button></div>
+  <details><summary class="summary">Токен GitHub для записи (один раз на устройство)</summary><p class="note">Нужен токен с правом записи в репозиторий ${esc('vodopian060-png/dash')}: GitHub → Settings → Developer settings → Fine-grained tokens → Generate: Repository access = только этот репозиторий, Permissions → Contents: Read and write. Вставь сюда — он хранится только в этом браузере.</p><input id="gh-token" type="password" placeholder="github_pat_…" style="width:100%"></details>
+  <div id="load-log"></div></div>
+  <div class="card"><h3>Что загружено сейчас</h3>${row('График перевозок',m.grafik)}${row('Таблица сверок',m.sverki)}${(m.bank||[]).map(b=>row('Выписка '+b.bank+' '+(b.acct||'').slice(-4),b)).join('')||row('Выписки',null)}</div>
+  <div class="card"><h3>Как считается</h3><p class="note">Нетто = сумма заказчика − сумма перевозчика − «сумма за рейс» (материал, только при поставке). Чистыми = нетто − 22/122 с нетто − 22/122 с суммы перевозчиков без НДС. Июньские сводные строки ЭльдонЭкспо исключены. Оригинал ТТН считается полученным по отметкам «ориг / подпис / скан / экз». ИП Водопьянова и ИП Водопьянов не учитываются. Минусовые нетто у отдельных заказчиков чаще всего — двойной учёт материала в графике.</p></div>`}
+const GH={owner:'vodopian060-png',repo:'dash',branch:'main'};const SALT='nerud-dash-v1';
+let KEY=null;const enc=new TextEncoder(),dec=new TextDecoder();
+async function deriveKey(pw){const base=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode(SALT),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+function b64(buf){let s='';const b=new Uint8Array(buf);for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s)}
+function unb64(s){const bin=atob(s.replace(/\s/g,''));const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b}
+async function encryptJson(obj){const BAD=/AKID|AKIA|ghp_|github_pat|sk_live|xox[abp]-/;for(let k=0;k<50;k++){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},KEY,enc.encode(JSON.stringify(obj)));const out=new Uint8Array(12+ct.byteLength);out.set(iv);out.set(new Uint8Array(ct),12);const s=b64(out);if(!BAD.test(s))return s.match(/.{1,64}/g).join('\n')}throw new Error('encrypt')}
+async function decryptJson(text){const b=unb64(text.trim());const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b.slice(0,12)},KEY,b.slice(12));return JSON.parse(dec.decode(pt))}
+async function fetchEnc(name){const r=await fetch(`data/${name}.enc?t=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(name+' '+r.status);return decryptJson(await r.text())}
+const tokenKey='nl-gh-token';const getToken=()=>{try{return localStorage.getItem(tokenKey)||''}catch(e){return ''}};
+async function ghPut(path,content,message){const url=`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}`;const h={Authorization:'Bearer '+getToken(),Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};let sha;const g=await fetch(url+'?ref='+GH.branch,{headers:h});if(g.ok)sha=(await g.json()).sha;else if(g.status!==404)throw new Error('GitHub '+g.status);
+  const body={message,content:b64(enc.encode(content)),branch:GH.branch};if(sha)body.sha=sha;const r=await fetch(url,{method:'PUT',headers:{...h,'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){const t=await r.text();throw new Error('GitHub '+r.status+': '+t.slice(0,120))}return r.json()}
+async function afterLoad(){const tk=document.getElementById('gh-token');if(tk){tk.value=getToken();tk.onchange=()=>{try{localStorage.setItem(tokenKey,tk.value.trim())}catch(e){}}}
+  const go=document.getElementById('go');if(!go)return;go.onclick=async()=>{const inp=document.getElementById('files');const log=document.getElementById('load-log');if(!getToken()){log.innerHTML='<div class="status bad">Сначала вставь токен GitHub (см. ниже).</div>';return}if(!inp.files.length){log.innerHTML='<div class="status bad">Выбери файлы.</div>';return}go.disabled=true;log.innerHTML='';
+  const meta=st.meta||{};const by=(document.getElementById('gh-name')||{}).value||'';
+  for(const f of inp.files){const el=document.createElement('div');el.className='status';el.textContent=`${f.name}: читаю…`;log.appendChild(el);
+    try{const buf=await f.arrayBuffer();const wb=XLSX.read(buf,{cellDates:true});const kind=NLParse.detect(wb);let payload,note,key,file;
+      if(kind==='grafik'){const g=NLParse.parseGrafik(wb,XLSX);if(!g.rows.length)throw new Error('не нашёл месячных листов');payload=NLParse.pack(g);const ds=g.rows.map(x=>x.d).filter(Boolean).sort();note=`${N(g.rows.length)} рейсов, ${ds[0]} – ${ds[ds.length-1]}`;key='grafik';file='grafik';st.g=g.rows}
+      else if(kind==='sverki'){const sv=NLParse.parseSverki(wb,XLSX);if(!sv.cust.length&&!sv.carr.length)throw new Error('не нашёл листов «СЧЕТА НЛ 2026» / «2026»');payload=sv;note=`${N(sv.cust.length)} строк по заказчикам, ${N(sv.carr.length)} по перевозчикам`;key='sverki';file='sverki';st.s=sv}
+      else{const b=NLParse.parseBank(wb,XLSX);if(!b.ops.length)throw new Error('не похоже на выписку Сбера или Альфы');payload=b;const ds=b.ops.map(x=>x.d).sort();note=`${b.bank} ${b.acct.slice(-4)}: ${N(b.ops.length)} операций, ${ds[0]} – ${ds[ds.length-1]}`;key='bank';file='bank-'+b.acct.slice(-4)}
+      el.textContent=`${f.name}: ${note} — шифрую и отправляю в GitHub…`;
+      const ct=await encryptJson(payload);await ghPut(`data/${file}.enc`,ct,`data: ${file} (${note})`);
+      const rec={file,at:new Date().toISOString(),by,note,name:f.name};
+      if(key==='bank'){const list=(meta.bank||[]).filter(x=>x.acct!==payload.acct);list.push({...rec,bank:payload.bank,acct:payload.acct});meta.bank=list}else meta[key]=rec;
+      el.textContent=`${f.name}: ${note} — сохранено`;el.classList.add('ok')}
+    catch(e){el.textContent=`${f.name}: ошибка — ${e.message||e}`;el.classList.add('bad')}}
+  try{await ghPut('data/meta.enc',await encryptJson(meta),'data: meta');st.meta=meta;const d=document.createElement('div');d.className='status ok';d.textContent='Готово. Остальные устройства увидят новые данные через 1–2 минуты (GitHub Pages пересобирает сайт).';log.appendChild(d)}catch(e){const d=document.createElement('div');d.className='status bad';d.textContent='Не удалось записать список файлов: '+e.message;log.appendChild(d)}
+  go.disabled=false;if(st.b||meta.bank)await loadBank(meta);refreshPeriod();}}
+async function loadBank(meta){try{if(meta.bank&&meta.bank.length){const parts=await Promise.all(meta.bank.map(b=>fetchEnc(b.file)));st.b={ops:parts.flatMap(p=>p.ops),start:meta.bankStart||101038.29}}else st.b=null}catch(e){console.error(e);st.b=null}}
+function refreshPeriod(){const ms=[...new Set(st.g.map(x=>x.m))].sort();const ps=$('#f-period');ps.innerHTML='<option value="all">Весь год</option>'+ms.map(m=>`<option value="${m}">${MN[m]}</option>`).join('');ps.value=st.period;const last=st.g.map(x=>x.d).filter(Boolean).sort().pop();$('#meta').textContent=st.g.length?`рейсы по ${last||'—'}`:'нет данных'}
+async function loadAll(){let meta={};try{meta=await fetchEnc('meta')}catch(e){console.error(e);throw e}st.meta=meta;
+  try{if(meta.grafik){st.g=NLParse.unpack(await fetchEnc(meta.grafik.file||'grafik')).rows}else st.g=[]}catch(e){console.error(e);st.g=[]}
+  try{st.s=meta.sverki?await fetchEnc(meta.sverki.file||'sverki'):null}catch(e){st.s=null}
+  await loadBank(meta);refreshPeriod()}
+// ---------- render ----------
+function render(){document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===st.view));const v=st.view;
+  try{main.innerHTML={over:vOver,trips:vTrips,carr:()=>entityView('carr'),cust:()=>entityView('cust'),fleet:vFleet,debt:vDebt,cash:vCash,docs:vDocs,load:vLoad}[v]();
+  ({over:afterOver,trips:afterTrips,carr:()=>afterEntity('carr'),cust:()=>afterEntity('cust'),fleet:afterFleet,debt:afterDebt,cash:afterCash,docs:afterDocs,load:afterLoad}[v])()}catch(e){console.error(e);main.innerHTML=`<div class="status bad">Ошибка отрисовки: ${esc(e.message)}</div>`}
+  main.querySelectorAll('[data-more]').forEach(b=>b.onclick=()=>{st.tf.page++;render()})}
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st.view=b.dataset.v;st.sel=null;st.tf.page=1;st.tf.q='';render();window.scrollTo(0,0)});
+$('#f-period').addEventListener('change',e=>{st.period=e.target.value;st.tf.page=1;render()});
+async function enter(pw,keep){KEY=await deriveKey(pw);try{await loadAll()}catch(e){KEY=null;$('#pw-err').classList.remove('hidden');return false}if(keep){try{localStorage.setItem('nl-pw',pw)}catch(e){}}$('#gate').classList.add('hidden');render();return true}
+$('#pw-go').onclick=()=>enter($('#pw').value,$('#pw-keep').checked);$('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')enter($('#pw').value,$('#pw-keep').checked)});
+(async()=>{let saved='';try{saved=localStorage.getItem('nl-pw')||''}catch(e){}if(saved){const ok=await enter(saved,false);if(!ok){try{localStorage.removeItem('nl-pw')}catch(e){}}}main.innerHTML='<div class="empty">Введите пароль.</div>'})();
+})();
+</script>
+</body></html>
