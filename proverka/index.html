@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Проверка перевозчиков</title>
+<link rel="icon" href="../icon.svg">
+<style>
+:root{
+ --font-anthropic-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+ --font-anthropic-serif:Georgia,"Times New Roman",serif;
+ --color-fg:#1d2430;--color-fg-muted:#5f6b7a;--color-bg:#f5f6f8;--color-panel:#ffffff;--color-border-line:#e1e5ea;
+ --color-ok:#2f8a4e;--color-warn:#c98a12;--color-bad:#c4392f;
+ --cds-chart-muted:#b9c2cd;--cds-chart-status-critical:#d2453a;--cds-surface-popover:#ffffff;--cds-border:#d5dbe2;--cds-text-secondary:#5f6b7a;
+ --cds-shadow-popover:0 6px 20px rgba(20,30,45,.14);
+ --cds-font-size-caption:12.5px;--cds-font-size-body:15px;--cds-font-size-heading:16px;--cds-font-size-title:28px;--cds-font-weight-medium:600;
+ --cds-gap-xs:4px;--cds-gap-sm:8px;--cds-gap-md:12px;--cds-gap-lg:20px;--cds-pad-xs:4px;--cds-pad-sm:8px;--cds-pad-md:12px;--cds-pad-lg:16px;--cds-radius:8px;--cds-dur-slow:.3s;
+ color-scheme:light}
+@media (prefers-color-scheme:dark){:root{
+ --color-fg:#e7ebf0;--color-fg-muted:#9aa6b4;--color-bg:#13171d;--color-panel:#1b2129;--color-border-line:#2c3540;
+ --color-ok:#4fb873;--color-warn:#e0a83a;--color-bad:#ef6a5f;--cds-chart-muted:#56616e;--cds-chart-status-critical:#e5584c;
+ --cds-surface-popover:#222a33;--cds-border:#38424e;--cds-text-secondary:#9aa6b4;--cds-shadow-popover:0 6px 20px rgba(0,0,0,.5);color-scheme:dark}}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:var(--font-anthropic-sans)}
+#dash-root{max-width:1280px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.dash-skeleton{color:transparent!important;background:var(--color-border-line);border-radius:6px}
+.pc-chart.dash-skeleton{background:transparent}
+.gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--color-bg);z-index:50;padding:16px}
+.gate-box{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:12px;padding:24px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:12px}
+.gate-box h2{margin:0;font-family:var(--font-anthropic-serif);font-weight:400}
+.gate-box input[type=password]{font:inherit;padding:10px;border:1px solid var(--color-border-line);border-radius:8px;background:var(--color-bg);color:var(--color-fg)}
+.gate-box button{font:inherit;padding:10px;border:0;border-radius:8px;background:var(--color-fg);color:var(--color-bg);cursor:pointer}
+.gate-box .err{color:var(--color-bad);font-size:13px}
+.gate-box label{font-size:13px;color:var(--color-fg-muted);display:flex;gap:6px;align-items:center}
+
+.pc{display:flex;flex-direction:column;gap:var(--cds-gap-lg);font-family:var(--font-anthropic-sans);color:var(--color-fg)}
+.pc h1{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0;text-wrap:balance}
+.pc h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0}
+.pc p{margin:0}
+.pc-head{display:flex;flex-direction:column;gap:var(--cds-gap-sm)}
+.pc-lead{font-size:var(--cds-font-size-body);max-width:70ch}
+.pc .pc-lead b{font-weight:600}
+.pc-note{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);max-width:80ch}
+.pc-filters{display:flex;flex-wrap:wrap;gap:var(--cds-gap-md);align-items:center;margin-top:var(--cds-gap-xs)}
+.pc-filters label{display:flex;align-items:center;gap:var(--cds-gap-xs);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.pc select,.pc input[type=search]{font:inherit;font-size:var(--cds-font-size-caption);color:var(--color-fg);background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-xs) var(--cds-pad-sm)}
+.pc input[type=search]{min-width:0;flex:1 1 14rem;max-width:22rem}
+.pc-tabs{display:flex;flex-wrap:wrap;gap:var(--cds-gap-xs);border-bottom:1px solid var(--color-border-line)}
+.pc-tab{font:inherit;font-size:var(--cds-font-size-body);background:none;border:0;border-bottom:2px solid transparent;color:var(--color-fg-muted);padding:var(--cds-pad-sm) var(--cds-pad-md);cursor:pointer;margin-bottom:-1px}
+.pc-tab[aria-selected=true]{color:var(--color-fg);border-bottom-color:var(--color-fg)}
+.pc-tab:focus-visible,.pc th button:focus-visible{outline:2px solid var(--color-fg);outline-offset:2px}
+.pc-page{display:flex;flex-direction:column;gap:var(--cds-gap-md)}
+.pc-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10.5rem),1fr));gap:var(--cds-gap-md)}
+.pc-tile{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-md) var(--cds-pad-lg);display:flex;flex-direction:column;gap:var(--cds-gap-xs)}
+.pc-tile-k{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);display:flex;align-items:center;gap:var(--cds-gap-xs)}
+.pc-tile-v{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);font-variant-numeric:tabular-nums;line-height:1.1}
+.pc-tile-s{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);font-variant-numeric:tabular-nums}
+.pc-tile.is-bad .pc-tile-v{color:var(--color-bad)}
+.pc-dot{width:.6rem;height:.6rem;border-radius:2px;display:inline-block;flex:none}
+.s-done{background:var(--color-ok)}.s-nolist{background:var(--color-warn)}.s-proc{background:var(--cds-chart-muted)}.s-miss{background:var(--cds-chart-status-critical)}
+.pc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr));gap:var(--cds-gap-md)}
+.pc-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg);display:flex;flex-direction:column;gap:var(--cds-gap-sm);min-width:0}
+.pc-legend{display:flex;flex-wrap:wrap;gap:var(--cds-gap-md);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.pc-legend span{display:flex;align-items:center;gap:var(--cds-gap-xs)}
+.pc-chart{position:relative;min-height:13rem}
+.pc-chart svg{display:block}
+.pc-tip{position:absolute;pointer-events:none;background:var(--cds-surface-popover);border:1px solid var(--cds-border);border-radius:var(--cds-radius);box-shadow:var(--cds-shadow-popover);padding:var(--cds-pad-xs) var(--cds-pad-sm);font-size:var(--cds-font-size-caption);white-space:nowrap;z-index:2}
+.pc-tip .t1{color:var(--cds-text-secondary)}
+.pc-tools{display:flex;flex-wrap:wrap;gap:var(--cds-gap-sm);align-items:center}
+.pc-scroll{overflow:auto;max-height:34rem;min-width:0}
+.pc-scroll.short{max-height:none}
+.pc table{width:100%;border-collapse:collapse;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.pc th{position:sticky;top:0;background:var(--color-panel);text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);border-bottom:1px solid var(--color-border-line);padding:var(--cds-pad-xs) var(--cds-pad-sm);white-space:nowrap;z-index:1}
+.pc th.num,.pc td.num{text-align:right}
+.pc th button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.pc th[aria-sort=ascending] button::after{content:" ↑"}
+.pc th[aria-sort=descending] button::after{content:" ↓"}
+.pc td{padding:var(--cds-pad-xs) var(--cds-pad-sm);border-bottom:1px solid var(--color-border-line);vertical-align:top}
+.pc td.wrap{min-width:16rem}
+.pc tr.is-sel td{background:var(--cds-surface-popover)}
+.pc-pill{display:inline-flex;align-items:center;gap:var(--cds-gap-xs);white-space:nowrap}
+.pc-count{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.pc-err{display:flex;align-items:center;justify-content:center;gap:var(--cds-gap-xs);min-height:inherit;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.pc-err i{width:.375rem;height:.375rem;border-radius:50%;background:var(--color-bad);display:inline-block}
+[data-dash-source-state=empty]{color:transparent}
+[data-dash-source-state=refreshing]{opacity:.5;transition:opacity var(--cds-dur-slow)}
+.pc-hide-narrow{}
+@media (max-width:640px){.pc-hide-narrow{display:none}}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+</head>
+<body>
+<div class="gate" id="gate"><div class="gate-box">
+<h2>Проверка перевозчиков</h2>
+<p style="margin:0;color:var(--color-fg-muted);font-size:14px">Введите пароль, чтобы открыть данные.</p>
+<input id="pw" type="password" placeholder="Пароль" autocomplete="current-password">
+<label><input type="checkbox" id="pw-keep" checked> запомнить на этом устройстве</label>
+<button id="pw-go">Открыть</button>
+<div class="err" id="pw-err" hidden>Неверный пароль</div>
+</div></div>
+<div id="dash-root" hidden>
+
+
+<div class="pc">
+  <header class="pc-head">
+    <h1 id="title">Проверка перевозчиков</h1>
+    <p class="pc-lead">Больше всего рейсов на перевозчиках, которых нет в Битриксе, у логиста <b data-draw="worst" data-source="logists">—</b>: <b data-draw="worst-share" data-source="logists">—</b> её рейсов. У досье с приложенным листом проверки — <b data-draw="done-share" data-source="logists">—</b> всех рейсов.</p>
+    <p class="pc-note">Рейсы с 29.04.2026 по 29.10.2026 из графика перевозок (все вкладки), статусы проверки, машины и водители — из Битрикса на 29.10.2026. Перевозчик засчитывается каждому логисту, который ставил его машины. Рейсы «Уголь Турция» отнесены Юлии; «не указан» — строки без логиста, в основном «Каспийск 38» и «МО 47.».</p>
+    <div class="pc-filters">
+      <label for="f-logist">Логист
+        <select id="f-logist" class="pc-f-logist">
+          <option value="">Все логисты</option>
+          <option value="Ксения">Ксения</option>
+          <option value="Юлия">Юлия</option>
+          <option value="Евгения">Евгения</option>
+          <option value="не указан">Логист не указан</option>
+        </select>
+      </label>
+      <label for="f-oct"><input type="checkbox" id="f-oct" class="pc-f-oct"> Только перевозчики, которые возили в октябре</label>
+    </div>
+  </header>
+
+  <nav class="pc-tabs" role="tablist" aria-label="Разделы">
+    <button class="pc-tab" role="tab" data-tab="logists" aria-selected="true">По логистам</button>
+    <button class="pc-tab" role="tab" data-tab="carriers" aria-selected="false">Перевозчики</button>
+    <button class="pc-tab" role="tab" data-tab="fleet" aria-selected="false">Машины и водители</button>
+    <button class="pc-tab" role="tab" data-tab="bitrix" aria-selected="false">Замечания по Битриксу</button>
+  </nav>
+
+  <section class="pc-page" id="logists" data-page="logists">
+    <div class="pc-tiles">
+      <div class="pc-tile" id="t-all">
+        <div class="pc-tile-k">Перевозчиков за 6 месяцев</div>
+        <div class="pc-tile-v dash-skeleton" data-draw="tile-carriers" data-source="logists" data-field="carriers">—</div>
+        <div class="pc-tile-s"><span data-draw="tile-trips" data-source="logists" data-field="trips">—</span> рейсов</div>
+      </div>
+      <div class="pc-tile" id="t-done">
+        <div class="pc-tile-k"><i class="pc-dot s-done"></i>Досье собрано, лист есть</div>
+        <div class="pc-tile-v dash-skeleton" data-draw="tile-done" data-source="logists" data-field="done">—</div>
+        <div class="pc-tile-s"><span data-draw="tile-trips-done" data-source="logists" data-field="trips_done">—</span> рейсов</div>
+      </div>
+      <div class="pc-tile" id="t-proc">
+        <div class="pc-tile-k"><i class="pc-dot s-proc"></i>В процессе</div>
+        <div class="pc-tile-v dash-skeleton" data-draw="tile-proc" data-source="logists" data-field="inprocess">—</div>
+        <div class="pc-tile-s"><span data-draw="tile-trips-proc" data-source="logists" data-field="trips_inprocess">—</span> рейсов</div>
+      </div>
+      <div class="pc-tile is-bad" id="t-miss">
+        <div class="pc-tile-k"><i class="pc-dot s-miss"></i>Нет в Битриксе</div>
+        <div class="pc-tile-v dash-skeleton" data-draw="tile-miss" data-source="logists" data-field="missing">—</div>
+        <div class="pc-tile-s"><span data-draw="tile-trips-miss" data-source="logists" data-field="trips_missing">—</span> рейсов</div>
+      </div>
+      <div class="pc-tile is-bad" id="t-share">
+        <div class="pc-tile-k">Доля рейсов вне Битрикса</div>
+        <div class="pc-tile-v dash-skeleton"><span data-draw="tile-share" data-source="logists" data-field="pct_missing">—</span>%</div>
+        <div class="pc-tile-s">рейсы перевозчиков без карточки</div>
+      </div>
+    </div>
+
+    <div class="pc-grid">
+      <div class="pc-card" id="card-bars">
+        <h2>Рейсы по статусу проверки перевозчика</h2>
+        <p class="pc-note">Доля рейсов каждого логиста за 6 месяцев. Наведите на полосу — число рейсов и перевозчиков.</p>
+        <div class="pc-legend">
+          <span><i class="pc-dot s-done"></i>Досье собрано</span>
+          <span><i class="pc-dot s-nolist"></i>Завершено без листа</span>
+          <span><i class="pc-dot s-proc"></i>В процессе</span>
+          <span><i class="pc-dot s-miss"></i>Нет в Битриксе</span>
+        </div>
+        <div class="pc-chart dash-skeleton" id="chart-bars" data-draw="bars" data-source="logists"></div>
+      </div>
+      <div class="pc-card" id="card-table">
+        <h2>Перевозчиков по логистам</h2>
+        <p class="pc-note">Сколько перевозчиков логиста в каждом статусе. Перевозчик, с которым работали двое, есть у обоих.</p>
+        <div class="pc-scroll short">
+          <table id="tbl-logists" data-source="logists" data-row-key="scope,logist">
+            <thead><tr>
+              <th data-field="logist">Логист</th>
+              <th class="num" data-field="done">Собрано</th>
+              <th class="num" data-field="nolist">Без листа</th>
+              <th class="num" data-field="inprocess">В процессе</th>
+              <th class="num" data-field="missing">Нет в Битриксе</th>
+              <th class="num" data-field="carriers">Всего</th>
+              <th class="num" data-field="pct_missing">Вне Битрикса, % рейсов</th>
+            </tr></thead>
+            <tbody data-draw="logist-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pc-page" id="carriers" data-page="carriers" hidden>
+    <div class="pc-card" id="card-carriers">
+      <h2>Перевозчики и статус проверки</h2>
+      <p class="pc-note">Сначала самые загруженные. «Этап» — этап карточки в «Согласовании поставщиков» и сколько документов из 19 отмечено. Клик по заголовку сортирует.</p>
+      <div class="pc-tools">
+        <input type="search" id="q-carriers" class="pc-q-carriers" placeholder="Найти перевозчика" aria-label="Найти перевозчика">
+        <label for="f-cstatus" class="pc-count">Статус
+          <select id="f-cstatus" class="pc-f-cstatus">
+            <option value="">Все</option>
+            <option value="Нет в Битриксе">Нет в Битриксе</option>
+            <option value="В процессе">В процессе</option>
+            <option value="Завершено без листа">Завершено без листа</option>
+            <option value="Досье собрано">Досье собрано</option>
+          </select>
+        </label>
+        <span class="pc-count">Показано: <b data-draw="carriers-count" data-source="carriers">—</b></span>
+      </div>
+      <div class="pc-scroll">
+        <table id="tbl-carriers" class="pc-sortable" data-source="carriers" data-row-key="carrier">
+          <thead><tr>
+            <th data-field="carrier" data-sort="carrier"><button type="button">Перевозчик</button></th>
+            <th data-field="status" data-sort="status"><button type="button">Статус</button></th>
+            <th data-field="stage" class="pc-hide-narrow">Этап в Битриксе</th>
+            <th class="num" data-field="trips" data-sort="trips" aria-sort="descending"><button type="button">Рейсов</button></th>
+            <th data-field="main" data-sort="main"><button type="button">Основной логист</button></th>
+            <th class="num pc-hide-narrow" data-field="months" data-sort="months"><button type="button">Месяцев с нами</button></th>
+            <th data-field="last" data-sort="last"><button type="button">Последний рейс</button></th>
+          </tr></thead>
+          <tbody data-draw="carriers-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="pc-page" id="fleet" data-page="fleet" hidden>
+    <p class="pc-note">Только перевозчики, которые уже заведены в Битриксе: какие их машины и водители ездили за 6 месяцев и есть ли они в Битриксе. Скан страховки, договор аренды или лизинга и основание работы водителя отсутствуют везде — см. «Замечания по Битриксу».</p>
+    <div class="pc-tiles">
+      <div class="pc-tile is-bad" id="t-veh">
+        <div class="pc-tile-k">Машин нет в Битриксе</div>
+        <div class="pc-tile-v dash-skeleton" data-draw="veh-miss" data-source="vehicles">—</div>
+        <div class="pc-tile-s">из <span data-draw="veh-all" data-source="vehicles">—</span> ездивших, <span data-draw="veh-trips" data-source="vehicles">—</span> рейсов</div>
+      </div>
+      <div class="pc-tile is-bad" id="t-drv">
+        <div class="pc-tile-k">Водителей нет в Битриксе</div>
+        <div class="pc-tile-v dash-skeleton" data-draw="drv-miss" data-source="drivers">—</div>
+        <div class="pc-tile-s">из <span data-draw="drv-all" data-source="drivers">—</span> ездивших, <span data-draw="drv-trips" data-source="drivers">—</span> рейсов</div>
+      </div>
+    </div>
+    <div class="pc-tools">
+      <label for="f-inbx" class="pc-count">Показать
+        <select id="f-inbx" class="pc-f-inbx">
+          <option value="нет">Нет в Битриксе</option>
+          <option value="да">Есть в Битриксе</option>
+          <option value="">Все</option>
+        </select>
+      </label>
+      <input type="search" id="q-fleet" class="pc-q-fleet" placeholder="Перевозчик, номер или фамилия" aria-label="Поиск по машинам и водителям">
+    </div>
+    <div class="pc-grid">
+      <div class="pc-card" id="card-veh">
+        <h2>Машины</h2>
+        <p class="pc-note">Госномер как записан в графике. <b data-draw="veh-count" data-source="vehicles">—</b> строк.</p>
+        <div class="pc-scroll">
+          <table id="tbl-veh" data-source="vehicles" data-row-key="carrier,plate">
+            <thead><tr>
+              <th data-field="plate">Госномер</th>
+              <th data-field="carrier">Перевозчик</th>
+              <th class="num" data-field="trips">Рейсов</th>
+              <th data-field="logist">Логист</th>
+              <th data-field="missing">Чего не хватает</th>
+            </tr></thead>
+            <tbody data-draw="veh-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="pc-card" id="card-drv">
+        <h2>Водители</h2>
+        <p class="pc-note">Фамилия как в графике или ФИО из Битрикса. <b data-draw="drv-count" data-source="drivers">—</b> строк.</p>
+        <div class="pc-scroll">
+          <table id="tbl-drv" data-source="drivers" data-row-key="carrier,driver">
+            <thead><tr>
+              <th data-field="driver">Водитель</th>
+              <th data-field="carrier">Перевозчик</th>
+              <th class="num" data-field="trips">Рейсов</th>
+              <th data-field="logist">Логист</th>
+              <th data-field="missing">Чего не хватает</th>
+            </tr></thead>
+            <tbody data-draw="drv-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pc-page" id="bitrix" data-page="bitrix" hidden>
+    <div class="pc-card" id="card-issues">
+      <h2>Что не так в самом Битриксе</h2>
+      <p class="pc-note">Найдено при сверке карточек «Согласование поставщиков», «Транспорт (ТС)» и «Водители» на 29.10.2026.</p>
+      <div class="pc-scroll short">
+        <table id="tbl-issues" data-source="issues" data-row-key="issue">
+          <thead><tr>
+            <th data-field="issue">Что</th>
+            <th data-field="details">Подробности</th>
+            <th class="num" data-field="count">Сколько</th>
+          </tr></thead>
+          <tbody data-draw="issues-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
+
+</div>
+<script>
+(() => {
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const DATA = {}, CALC = {}, DRAWS = {}, ON = [];
+  let PARAMS = {logist: null, oct: false}, READY = false;
+  window.dash = {
+    data: (id) => (id in DATA ? {status: 'ok', data: DATA[id]} : {status: READY ? 'missing' : 'loading', data: []}),
+    calc: (id, o) => { CALC[id] = o; },
+    draw: (name, fn) => { if (fn) DRAWS[name] = fn; if (READY) runDraw(name); },
+    onData: (fn) => { ON.push(fn); if (READY) fn(); },
+    params: () => ({...PARAMS}),
+    setParams: (p) => { PARAMS = {...PARAMS, ...p}; all(); },
+    resetParams: () => { PARAMS = {logist: null, oct: false}; all(); },
+    setLink: (id) => { history.replaceState(null, '', '#' + id); all(); },
+    colors: ['#3b6fb6', '#d08a3a', '#3f9a62', '#c4473c', '#7a62b8', '#8a6d52', '#2e9aa6', '#b05a8d'],
+  };
+  function runDraw(name) {
+    const fn = DRAWS[name]; if (!fn) return;
+    document.querySelectorAll('[data-draw="' + name + '"]').forEach((el) => { if (el.closest('[hidden]')) return; try { fn(el); } catch (e) { console.error(name, e); } });
+  }
+  function all() { if (!READY) return; ON.forEach((f) => f()); Object.keys(DRAWS).forEach(runDraw); }
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(all, 120); });
+  const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  async function open(pw) {
+    const base = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({name: 'PBKDF2', salt: enc.encode('nerud-dash-v1'), iterations: 150000, hash: 'SHA-256'}, base, {name: 'AES-GCM', length: 256}, false, ['decrypt']);
+    const txt = await fetch('data.enc', {cache: 'no-store'}).then((r) => r.text());
+    const b = b64d(txt.trim());
+    const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: b.slice(0, 12)}, key, b.slice(12));
+    return JSON.parse(dec.decode(pt));
+  }
+  async function enter(pw, keep) {
+    let d;
+    try { d = await open(pw); } catch (e) { document.getElementById('pw-err').hidden = false; return; }
+    Object.assign(DATA, d);
+    for (const [id, o] of Object.entries(CALC)) DATA[id] = o.fn(...o.inputs.map((i) => DATA[i]));
+    if (keep) { try { localStorage.setItem('nl-pw', pw); } catch (e) {} }
+    document.getElementById('gate').hidden = true;
+    document.getElementById('dash-root').hidden = false;
+    READY = true;
+    document.querySelectorAll('.pc-tab').forEach((b) => b.addEventListener('click', () => setTimeout(all, 0)));
+    all();
+  }
+  window.__pcEnter = enter;
+  document.getElementById('pw-go').addEventListener('click', () => enter(document.getElementById('pw').value, document.getElementById('pw-keep').checked));
+  document.getElementById('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('pw-go').click(); });
+})();
+</script>
+<script>
+dash.calc('logists', {
+  title: 'Статусы по логистам',
+  description: 'Перевозчики и рейсы по статусу проверки для каждого логиста и для всех вместе, за 6 месяцев и только по возившим в октябре.',
+  inputs: ['pairs', 'carriers'],
+  fn: (pairs, carriers) => {
+    const S = {'Досье собрано': 'done', 'Завершено без листа': 'nolist', 'В процессе': 'inprocess', 'Нет в Битриксе': 'missing'};
+    const out = [];
+    for (const scope of ['all', 'oct']) {
+      const groups = [['Все', carriers.filter((c) => scope === 'all' || c.october === 'да').map((c) => ({status: c.status, trips: Number(c.trips)}))]];
+      for (const l of ['Ксения', 'Юлия', 'Евгения', 'не указан']) {
+        groups.push([l, pairs.filter((p) => p.logist === l && (scope === 'all' || p.october === 'да')).map((p) => ({status: p.status, trips: Number(p.trips)}))]);
+      }
+      for (const [logist, rows] of groups) {
+        const r = {scope, logist, carriers: rows.length, trips: 0, done: 0, nolist: 0, inprocess: 0, missing: 0, trips_done: 0, trips_nolist: 0, trips_inprocess: 0, trips_missing: 0};
+        for (const x of rows) { const k = S[x.status]; r[k] += 1; r['trips_' + k] += x.trips; r.trips += x.trips; }
+        r.pct_missing = r.trips ? Math.round(r.trips_missing / r.trips * 100) : 0;
+        r.pct_done = r.trips ? Math.round(r.trips_done / r.trips * 100) : 0;
+        out.push(r);
+      }
+    }
+    return out;
+  },
+});
+
+(() => {
+  const fmt = (n) => d3.format(',')(Math.round(n)).replace(/,/g, ' ');
+  const W = window.pcState = window.pcState || {tab: 'logists', csort: {key: 'trips', dir: -1}, q: '', cstatus: '', inbx: 'нет', qf: ''};
+  const P = () => ({logist: dash.params().logist || '', oct: dash.params().oct === true});
+  const scope = () => (P().oct ? 'oct' : 'all');
+  const who = () => P().logist || 'Все';
+  const each = (sel, fn) => document.querySelectorAll(sel).forEach(fn);
+  const redraw = (...names) => names.forEach((n) => dash.draw(n));
+  const ALL = ['worst', 'worst-share', 'done-share', 'tile-carriers', 'tile-trips', 'tile-done', 'tile-trips-done', 'tile-proc', 'tile-trips-proc', 'tile-miss', 'tile-trips-miss', 'tile-share', 'bars', 'logist-body', 'carriers-count', 'carriers-body', 'veh-miss', 'veh-all', 'veh-trips', 'drv-miss', 'drv-all', 'drv-trips', 'veh-count', 'drv-count', 'veh-body', 'drv-body'];
+
+  // controls
+  each('.pc-f-logist', (s) => s.addEventListener('change', () => dash.setParams({logist: s.value || null})));
+  each('.pc-f-oct', (c) => c.addEventListener('change', () => dash.setParams({oct: c.checked})));
+  each('.pc-q-carriers', (i) => i.addEventListener('input', () => { W.q = i.value.trim().toLowerCase(); redraw('carriers-body', 'carriers-count'); }));
+  each('.pc-f-cstatus', (s) => s.addEventListener('change', () => { W.cstatus = s.value; redraw('carriers-body', 'carriers-count'); }));
+  each('.pc-f-inbx', (s) => s.addEventListener('change', () => { W.inbx = s.value; redraw('veh-body', 'drv-body', 'veh-count', 'drv-count'); }));
+  each('.pc-q-fleet', (i) => i.addEventListener('input', () => { W.qf = i.value.trim().toLowerCase(); redraw('veh-body', 'drv-body', 'veh-count', 'drv-count'); }));
+  each('.pc-sortable th[data-sort] button', (b) => b.addEventListener('click', () => {
+    const k = b.closest('th').dataset.sort;
+    W.csort = {key: k, dir: W.csort.key === k ? -W.csort.dir : (['trips', 'months', 'last'].includes(k) ? -1 : 1)};
+    each('.pc-sortable th[data-sort]', (th) => th.setAttribute('aria-sort', th.dataset.sort === W.csort.key ? (W.csort.dir > 0 ? 'ascending' : 'descending') : 'none'));
+    redraw('carriers-body');
+  }));
+  const showTab = (id) => {
+    W.tab = id;
+    each('.pc-page', (s) => { s.hidden = s.dataset.page !== id; });
+    each('.pc-tab', (b) => b.setAttribute('aria-selected', b.dataset.tab === id ? 'true' : 'false'));
+  };
+  each('.pc-tab', (b) => b.addEventListener('click', () => { showTab(b.dataset.tab); dash.setLink(b.dataset.tab); }));
+  const named = location.hash.slice(1);
+  if (['logists', 'carriers', 'fleet', 'bitrix'].includes(named)) showTab(named);
+
+  dash.onData(() => {
+    const p = P();
+    each('.pc-f-logist', (s) => { s.value = p.logist; });
+    each('.pc-f-oct', (c) => { c.checked = p.oct; });
+  });
+
+  // helpers for drawings
+  const L = () => dash.data('logists');
+  const row = (logist) => { const g = L(); return g.status === 'ok' ? g.data.find((r) => r.scope === scope() && r.logist === logist) : null; };
+  const fail = (el, g) => {
+    el.classList.remove('dash-skeleton');
+    if (g.status === 'error') { el.replaceChildren(); const d = document.createElement('div'); d.className = 'pc-err'; d.append(document.createElement('i'), 'Failed to load'); el.append(d); }
+    else el.textContent = '—';
+  };
+  const setWhere = (el, logist) => { el.dataset.where = 'scope=' + scope() + '&logist=' + encodeURIComponent(logist); };
+
+  const tile = (name, field) => dash.draw(name, (el) => {
+    const r = row(who());
+    if (!r) return fail(el, L());
+    setWhere(el, who());
+    el.textContent = fmt(r[field]);
+    el.classList.remove('dash-skeleton');
+    const box = el.closest('.dash-skeleton'); if (box) box.classList.remove('dash-skeleton');
+  });
+  [['tile-carriers', 'carriers'], ['tile-trips', 'trips'], ['tile-done', 'done'], ['tile-trips-done', 'trips_done'], ['tile-proc', 'inprocess'], ['tile-trips-proc', 'trips_inprocess'], ['tile-miss', 'missing'], ['tile-trips-miss', 'trips_missing'], ['tile-share', 'pct_missing']].forEach(([n, f]) => tile(n, f));
+
+  const worstRow = () => {
+    const g = L(); if (g.status !== 'ok') return null;
+    return g.data.filter((r) => r.scope === scope() && ['Ксения', 'Юлия', 'Евгения'].includes(r.logist)).sort((a, b) => b.pct_missing - a.pct_missing)[0];
+  };
+  dash.draw('worst', (el) => { const r = worstRow(); if (!r) return fail(el, L()); el.dataset.field = 'logist'; setWhere(el, r.logist); el.textContent = r.logist; });
+  dash.draw('worst-share', (el) => { const r = worstRow(); if (!r) return fail(el, L()); el.dataset.field = 'pct_missing'; setWhere(el, r.logist); el.textContent = r.pct_missing + '%'; });
+  dash.draw('done-share', (el) => { const r = row('Все'); if (!r) return fail(el, L()); el.dataset.field = 'pct_done'; setWhere(el, 'Все'); el.textContent = r.pct_done + '%'; });
+
+  // stacked bars
+  const SEG = [['trips_done', 'done', 'Досье собрано', 'var(--color-ok)'], ['trips_nolist', 'nolist', 'Завершено без листа', 'var(--color-warn)'], ['trips_inprocess', 'inprocess', 'В процессе', 'var(--cds-chart-muted)'], ['trips_missing', 'missing', 'Нет в Битриксе', 'var(--cds-chart-status-critical)']];
+  dash.draw('bars', (el) => {
+    const g = L();
+    if (g.status !== 'ok') return fail(el, g);
+    el.classList.remove('dash-skeleton');
+    const rows = ['Ксения', 'Юлия', 'Евгения', 'не указан'].map((l) => g.data.find((r) => r.scope === scope() && r.logist === l)).filter(Boolean);
+    el.replaceChildren();
+    const w = Math.max(280, el.clientWidth), bh = 30, gap = 18, top = 4;
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${top + rows.length * (bh + gap) + 6}`);
+    const probe = svg.append('text').attr('font-size', 12).text('не указан');
+    const lw = probe.node().getComputedTextLength() + 14; probe.remove();
+    const tw = 70;
+    const x = d3.scaleLinear([0, 1], [lw, w - tw]);
+    const tip = d3.select(el).append('div').attr('class', 'pc-tip').style('display', 'none');
+    const sel = P().logist;
+    rows.forEach((r, i) => {
+      const y = top + i * (bh + gap);
+      const gg = svg.append('g').attr('opacity', sel && sel !== r.logist ? 0.35 : 1);
+      gg.append('text').attr('x', 0).attr('y', y + bh / 2).attr('dy', '0.35em').attr('font-size', 12).style('fill', 'var(--color-fg)').text(r.logist);
+      let acc = 0;
+      SEG.forEach(([tk, ck, name, color]) => {
+        const v = r.trips ? r[tk] / r.trips : 0;
+        if (v <= 0) return;
+        const x0 = x(acc), x1 = x(acc + v);
+        gg.append('rect').attr('x', x0).attr('y', y).attr('width', Math.max(1, x1 - x0 - 1)).attr('height', bh).attr('rx', 2).style('fill', color)
+          .on('mousemove', (ev) => {
+            const [mx, my] = d3.pointer(ev, el);
+            tip.style('display', null).html('');
+            tip.append('div').attr('class', 't1').text(r.logist + ' · ' + name);
+            tip.append('div').text(fmt(r[tk]) + ' рейсов (' + Math.round(v * 100) + '%), перевозчиков: ' + fmt(r[ck]));
+            const tw2 = tip.node().offsetWidth;
+            tip.style('left', Math.min(Math.max(0, mx + 12), el.clientWidth - tw2) + 'px').style('top', (my + 14) + 'px');
+          })
+          .on('mouseleave', () => tip.style('display', 'none'));
+        if (x1 - x0 > 34) gg.append('text').attr('x', (x0 + x1) / 2).attr('y', y + bh / 2).attr('dy', '0.35em').attr('text-anchor', 'middle').attr('font-size', 11).attr('pointer-events', 'none')
+          .style('fill', ck === 'inprocess' ? 'var(--color-fg)' : 'var(--color-bg)').text(Math.round(v * 100) + '%');
+        acc += v;
+      });
+      gg.append('text').attr('x', w - tw + 8).attr('y', y + bh / 2).attr('dy', '0.35em').attr('font-size', 11).style('fill', 'var(--color-fg-muted)').text(fmt(r.trips) + ' р.');
+    });
+  });
+
+  dash.draw('logist-body', (tb) => {
+    const g = L();
+    tb.replaceChildren();
+    if (g.status !== 'ok') return;
+    const sel = P().logist;
+    ['Ксения', 'Юлия', 'Евгения', 'не указан', 'Все'].forEach((l) => {
+      const r = g.data.find((x) => x.scope === scope() && x.logist === l);
+      if (!r) return;
+      const tr = document.createElement('tr');
+      tr.dataset.key = encodeURIComponent(r.scope) + ',' + encodeURIComponent(r.logist);
+      if (sel === l) tr.className = 'is-sel';
+      [[r.logist, ''], [fmt(r.done), 'num'], [fmt(r.nolist), 'num'], [fmt(r.inprocess), 'num'], [fmt(r.missing), 'num'], [fmt(r.carriers), 'num'], [String(r.pct_missing), 'num']].forEach(([t, c]) => {
+        const td = document.createElement('td'); td.textContent = t; if (c) td.className = c; tr.append(td);
+      });
+      tb.append(tr);
+    });
+  });
+
+  // carriers
+  const LK = {'Ксения': 'ksenia', 'Юлия': 'yulia', 'Евгения': 'evgenia', 'не указан': 'nologist'};
+  const DOT = {'Досье собрано': 's-done', 'Завершено без листа': 's-nolist', 'В процессе': 's-proc', 'Нет в Битриксе': 's-miss'};
+  const carriersNow = () => {
+    const g = dash.data('carriers'); if (g.status !== 'ok') return null;
+    const p = P();
+    let rows = g.data.filter((c) => (!p.logist || Number(c[LK[p.logist]]) > 0) && (!p.oct || c.october === 'да') && (!W.cstatus || c.status === W.cstatus) && (!W.q || (c.carrier + ' ' + c.bitrix).toLowerCase().includes(W.q)));
+    const k = W.csort.key, d = W.csort.dir;
+    const num = ['trips', 'months'].includes(k);
+    rows = rows.slice().sort((a, b) => { const av = num ? Number(a[k]) : String(a[k]); const bv = num ? Number(b[k]) : String(b[k]); return (av < bv ? -1 : av > bv ? 1 : 0) * d; });
+    return rows;
+  };
+  dash.draw('carriers-count', (el) => { const r = carriersNow(); if (!r) return fail(el, dash.data('carriers')); el.textContent = fmt(r.length); });
+  dash.draw('carriers-body', (tb) => {
+    tb.replaceChildren();
+    const rows = carriersNow(); if (!rows) return;
+    rows.forEach((c) => {
+      const tr = document.createElement('tr');
+      const td = (t, cls) => { const e = document.createElement('td'); e.textContent = t; if (cls) e.className = cls; tr.append(e); return e; };
+      td(c.carrier);
+      const st = td(''); const sp = document.createElement('span'); sp.className = 'pc-pill'; const dot = document.createElement('i'); dot.className = 'pc-dot ' + (DOT[c.status] || ''); sp.append(dot, c.status); st.append(sp);
+      td(c.stage, 'pc-hide-narrow');
+      td(fmt(c.trips), 'num');
+      td(c.main);
+      td(String(c.months), 'num pc-hide-narrow');
+      td(c.last);
+      tb.append(tr);
+    });
+  });
+
+  // fleet
+  const fleetRows = (id, key) => {
+    const g = dash.data(id); if (g.status !== 'ok') return null;
+    const p = P();
+    return g.data.filter((v) => (!p.logist || v.logist === p.logist) && (!p.oct || v.last >= '2026-10-01') && (!W.inbx || v.in_bitrix === W.inbx) && (!W.qf || (v[key] + ' ' + v.carrier).toLowerCase().includes(W.qf)));
+  };
+  const base = (id) => { const g = dash.data(id); if (g.status !== 'ok') return null; const p = P(); return g.data.filter((v) => (!p.logist || v.logist === p.logist) && (!p.oct || v.last >= '2026-10-01')); };
+  [['veh', 'vehicles'], ['drv', 'drivers']].forEach(([pre, id]) => {
+    const key = id === 'vehicles' ? 'plate' : 'driver';
+    const stat = (name, fn) => dash.draw(name, (el) => { const r = base(id); if (!r) return fail(el, dash.data(id)); el.textContent = fmt(fn(r)); el.classList.remove('dash-skeleton'); });
+    stat(pre + '-miss', (r) => r.filter((v) => v.in_bitrix === 'нет').length);
+    stat(pre + '-all', (r) => r.length);
+    stat(pre + '-trips', (r) => d3.sum(r.filter((v) => v.in_bitrix === 'нет'), (v) => Number(v.trips)));
+    dash.draw(pre + '-count', (el) => { const r = fleetRows(id, key); if (!r) return fail(el, dash.data(id)); el.textContent = fmt(r.length); });
+    dash.draw(pre + '-body', (tb) => {
+      tb.replaceChildren();
+      const rows = fleetRows(id, key); if (!rows) return;
+      rows.forEach((v) => {
+        const tr = document.createElement('tr');
+        tr.dataset.key = encodeURIComponent(v.carrier) + ',' + encodeURIComponent(v[key]);
+        [[v[key], ''], [v.carrier, ''], [fmt(v.trips), 'num'], [v.logist, ''], [v.missing, '']].forEach(([t, c]) => { const e = document.createElement('td'); e.textContent = t; if (c) e.className = c; tr.append(e); });
+        tb.append(tr);
+      });
+    });
+  });
+
+  dash.draw('issues-body', (tb) => {
+    tb.replaceChildren();
+    const g = dash.data('issues'); if (g.status !== 'ok') return;
+    g.data.forEach((r) => {
+      const tr = document.createElement('tr');
+      [[r.issue, ''], [r.details, 'wrap'], [r.count, 'num']].forEach(([t, c]) => { const e = document.createElement('td'); e.textContent = t; if (c) e.className = c; tr.append(e); });
+      tb.append(tr);
+    });
+  });
+})();
+</script>
+
+<script>
+(() => { let pw = null; try { pw = localStorage.getItem('nl-pw'); } catch (e) {} if (pw) window.__pcEnter(pw, false); })();
+</script>
+</body>
+</html>
