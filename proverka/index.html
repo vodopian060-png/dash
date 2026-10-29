@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Проверка перевозчиков</title>
 <link rel="icon" href="../icon.svg">
+<meta name="robots" content="noindex,nofollow">
 <style>
 :root{
  --font-anthropic-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
@@ -69,6 +70,7 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 .pc-tools{display:flex;flex-wrap:wrap;gap:var(--cds-gap-sm);align-items:center}
 .pc-scroll{overflow:auto;max-height:34rem;min-width:0}
 .pc-scroll.short{max-height:none}
+.pc-scroll.short th{white-space:normal;vertical-align:bottom}
 .pc table{width:100%;border-collapse:collapse;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
 .pc th{position:sticky;top:0;background:var(--color-panel);text-align:left;font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);border-bottom:1px solid var(--color-border-line);padding:var(--cds-pad-xs) var(--cds-pad-sm);white-space:nowrap;z-index:1}
 .pc th.num,.pc td.num{text-align:right}
@@ -91,15 +93,7 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 </head>
 <body>
-<div class="gate" id="gate"><div class="gate-box">
-<h2>Проверка перевозчиков</h2>
-<p style="margin:0;color:var(--color-fg-muted);font-size:14px">Введите пароль, чтобы открыть данные.</p>
-<input id="pw" type="password" placeholder="Пароль" autocomplete="current-password">
-<label><input type="checkbox" id="pw-keep" checked> запомнить на этом устройстве</label>
-<button id="pw-go">Открыть</button>
-<div class="err" id="pw-err" hidden>Неверный пароль</div>
-</div></div>
-<div id="dash-root" hidden>
+<div id="dash-root">
 
 
 <div class="pc">
@@ -181,7 +175,7 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
               <th class="num" data-field="inprocess">В процессе</th>
               <th class="num" data-field="missing">Нет в Битриксе</th>
               <th class="num" data-field="carriers">Всего</th>
-              <th class="num" data-field="pct_missing">Вне Битрикса, % рейсов</th>
+              <th class="num" data-field="pct_missing">% рейсов вне Битрикса</th>
             </tr></thead>
             <tbody data-draw="logist-body"></tbody>
           </table>
@@ -325,30 +319,15 @@ html,body{margin:0;background:var(--color-bg);color:var(--color-fg);font-family:
   }
   function all() { if (!READY) return; ON.forEach((f) => f()); Object.keys(DRAWS).forEach(runDraw); }
   let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(all, 120); });
-  const b64d = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-  async function open(pw) {
-    const base = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveKey']);
-    const key = await crypto.subtle.deriveKey({name: 'PBKDF2', salt: enc.encode('nerud-dash-v1'), iterations: 150000, hash: 'SHA-256'}, base, {name: 'AES-GCM', length: 256}, false, ['decrypt']);
-    const txt = await fetch('data.enc', {cache: 'no-store'}).then((r) => r.text());
-    const b = b64d(txt.trim());
-    const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: b.slice(0, 12)}, key, b.slice(12));
-    return JSON.parse(dec.decode(pt));
-  }
-  async function enter(pw, keep) {
-    let d;
-    try { d = await open(pw); } catch (e) { document.getElementById('pw-err').hidden = false; return; }
+  async function load() {
+    const d = await fetch('data.json', {cache: 'no-store'}).then((r) => r.json());
     Object.assign(DATA, d);
     for (const [id, o] of Object.entries(CALC)) DATA[id] = o.fn(...o.inputs.map((i) => DATA[i]));
-    if (keep) { try { localStorage.setItem('nl-pw', pw); } catch (e) {} }
-    document.getElementById('gate').hidden = true;
-    document.getElementById('dash-root').hidden = false;
     READY = true;
     document.querySelectorAll('.pc-tab').forEach((b) => b.addEventListener('click', () => setTimeout(all, 0)));
     all();
   }
-  window.__pcEnter = enter;
-  document.getElementById('pw-go').addEventListener('click', () => enter(document.getElementById('pw').value, document.getElementById('pw-keep').checked));
-  document.getElementById('pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('pw-go').click(); });
+  window.__pcLoad = load;
 })();
 </script>
 <script>
@@ -572,7 +551,7 @@ dash.calc('logists', {
 </script>
 
 <script>
-(() => { let pw = null; try { pw = localStorage.getItem('nl-pw'); } catch (e) {} if (pw) window.__pcEnter(pw, false); })();
+window.__pcLoad();
 </script>
 </body>
 </html>
