@@ -433,7 +433,7 @@ dash.calc('logists', {
     const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${w} ${top + rows.length * (bh + gap) + 6}`);
     const probe = svg.append('text').attr('font-size', 12).text('не указан');
     const lw = probe.node().getComputedTextLength() + 14; probe.remove();
-    const tw = 70;
+    const tw = 96;
     const x = d3.scaleLinear([0, 1], [lw, w - tw]);
     const tip = d3.select(el).append('div').attr('class', 'pc-tip').style('display', 'none');
     const sel = P().logist;
@@ -460,7 +460,7 @@ dash.calc('logists', {
           .style('fill', ck === 'inprocess' ? 'var(--color-fg)' : 'var(--color-bg)').text(Math.round(v * 100) + '%');
         acc += v;
       });
-      gg.append('text').attr('x', w - tw + 8).attr('y', y + bh / 2).attr('dy', '0.35em').attr('font-size', 11).style('fill', 'var(--color-fg-muted)').text(fmt(r.trips) + ' р.');
+      gg.append('text').attr('x', w - tw + 8).attr('y', y + bh / 2).attr('dy', '0.35em').attr('font-size', 11).style('fill', 'var(--color-fg-muted)').text(fmt(r.trips) + ' рейсов');
     });
   });
 
